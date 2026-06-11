@@ -1,0 +1,119 @@
+markdown_path: /home/benjamin.cretois/AppImages/obsidian_vault/paper_summaries/
+
+arxiv:
+  categories:
+    - cs.AI
+    - cs.LG
+    - cs.CV
+    - q-bio.PE    # Populations and Evolution
+    - q-bio.QM    # Quantitative Methods
+    - eess.IV     # Image and Video Processing (remote sensing)
+  keywords:
+    - biodiversity
+    - conservation
+    - species distribution
+    - wildlife monitoring
+    - ecological modeling
+    - habitat
+    - remote sensing ecology
+    - animal detection
+    - bioacoustics
+    - camera trap
+    - remote sensing
+
+journals:
+  - name: Methods in Ecology and Evolution
+    issn: "2041-210X"
+  - name: Ecological Informatics
+    issn: "1574-9541"
+  - name: Nature Ecology & Evolution
+    issn: "2397-334X"
+  - name: Biological Conservation
+    issn: "0006-3207"
+  - name: Conservation Biology
+    issn: "0888-8892"
+  - name: Remote Sensing in Ecology and Conservation
+    issn: "2056-3485"
+  - name: Ecological Applications
+    issn: "1051-0761"
+  - name: Ecography
+    issn: "1600-0587"
+  - name: Journal of Applied Ecology
+    issn: "0021-8901"
+  - name: Remote Sensing of Environment
+    issn: "0034-4257"
+  - name: Ecological Modelling
+    issn: "0304-3800"
+  - name: Proceedings of the Royal Society B
+    issn: "0962-8436"
+  - name: Global Ecology and Biogeography
+    issn: "1466-822X"
+  - name: Journal of Biogeography
+    issn: "0305-0270"
+  - name: Frontiers in Ecology and the Environment
+    issn: "1540-9295"
+  - name: Ecological Indicators
+    issn: "1470-160X"
+
+openalex:
+  # Keywords to filter journal articles (looking for AI/ML papers in ecology journals)
+  keywords:
+    - artificial intelligence
+    - machine learning
+    - deep learning
+    - computer vision
+    - neural network
+    - random forest
+    - species distribution model
+    - automated detection
+    - image classification
+    - object detection
+    - bioacoustics
+    - biodiversity
+    - big data
+  # Polite pool: provide your email for faster rate limits
+  mailto: "bencretois@gmail.com"
+
+model:
+  base_url: "http://localhost:8087/v1"
+  model_name: "gemma-4-26B-A4B-it-UD-Q4_K_M.gguf"
+  api_key: "not-needed"
+
+settings:
+  default_days: 3
+  data_dir: "data"
+  paper_timeout_seconds: 120  # Skip a paper if the model takes longer than this
+  abstract_max_chars: 800     # Max length of abstract to send to model
+  min_relevance_score: 0.7    # Drop summaries below this score from output (0.0 = keep all)
+
+# Each entry defines the behaviour of one agent used in the pipeline.
+# Add a new skill here to create a new agent without touching any code.
+#
+# Supported keys per skill:
+#   instructions (str)   - System prompt sent to the model. Required.
+#   temperature  (float) - Sampling temperature (0.0–1.0). Optional.
+#   max_tokens   (int)   - Max tokens to generate. Optional.
+agents:
+  paper_summarizer:
+    instructions: |
+      You are a research assistant specializing in the intersection of Artificial Intelligence
+      and Biodiversity Conservation. Summarize the given paper concisely and precisely.
+
+      You must produce:
+      - summary: 2-3 sentences on the key contribution
+      - relevance_score: 0.0-1.0 for relevance to AI + biodiversity/conservation
+      - key_methods: AI/ML techniques used (e.g. CNN, transformer, random forest)
+      - conservation_topics: biodiversity/conservation topics addressed (e.g. species detection, habitat mapping)
+
+      Be technical and specific. Avoid vague language.
+    temperature: 0.2   # Low temperature for factual, consistent summaries
+
+  highlighter:
+    instructions: |
+      You are a research assistant specializing in the intersection of Artificial Intelligence
+      and Biodiversity Conservation. Given a list of paper summaries, identify the most
+      noteworthy papers.
+
+      You must produce:
+      - highlights: 1-3 paper titles that are particularly novel or impactful
+    temperature: 0.5   # Slightly higher temperature for more discerning selection
