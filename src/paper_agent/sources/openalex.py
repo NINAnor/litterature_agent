@@ -39,6 +39,12 @@ def _matches_keywords(text: str, keywords: list[str]) -> bool:
     return any(kw.lower() in text_lower for kw in keywords)
 
 
+def _matches_excluded_keywords(text: str, exclude_keywords: list[str]) -> bool:
+    """Check if text contains any excluded keywords (case-insensitive)."""
+    text_lower = text.lower()
+    return any(kw.lower() in text_lower for kw in exclude_keywords)
+
+
 def _parse_works(works: list[dict], journal_name: str) -> list[Paper]:
     """Parse a list of OpenAlex work dicts into Paper objects."""
     papers: dict[str, Paper] = {}
@@ -97,6 +103,7 @@ async def _fetch_one_journal(
     client: httpx.AsyncClient,
     journal: dict,
     keywords: list[str],
+    exclude_keywords: list[str],
     from_date: str,
     params_base: dict,
 ) -> list[Paper]:
@@ -123,6 +130,10 @@ async def _fetch_one_journal(
     matching = [
         w for w in results
         if _matches_keywords(f"{w.get('title', '')} {_reconstruct_abstract(w.get('abstract_inverted_index'))}", keywords)
+        and not _matches_excluded_keywords(
+            f"{w.get('title', '')} {_reconstruct_abstract(w.get('abstract_inverted_index'))}",
+            exclude_keywords,
+        )
     ]
     return _parse_works(matching, journal_name)
 
@@ -130,6 +141,7 @@ async def _fetch_one_journal(
 async def fetch_journal_papers(
     journals: list[dict],
     keywords: list[str],
+    exclude_keywords: list[str] | None = None,
     days: int = 3,
     mailto: str = "",
 ) -> list[Paper]:
@@ -140,12 +152,14 @@ async def fetch_journal_papers(
     Args:
         journals: List of dicts with 'name' and 'issn' keys
         keywords: AI/ML keywords to filter papers by
+        exclude_keywords: Keywords that, if present, cause a paper to be excluded
         days: How many days back to look
         mailto: Email for OpenAlex polite pool (faster rate limits)
 
     Returns:
         List of Paper objects matching the criteria (deduplicated by paper_id)
     """
+    exclude_keywords = exclude_keywords or []
     cutoff_date = date.today() - timedelta(days=days)
     from_date = cutoff_date.isoformat()
 
@@ -155,7 +169,7 @@ async def fetch_journal_papers(
 
     async with httpx.AsyncClient() as client:
         tasks = [
-            _fetch_one_journal(client, journal, keywords, from_date, params_base)
+            _fetch_one_journal(client, journal, keywords, exclude_keywords, from_date, params_base)
             for journal in journals
         ]
         results = await asyncio.gather(*tasks)

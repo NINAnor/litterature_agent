@@ -14,9 +14,16 @@ def _matches_keywords(text: str, keywords: list[str]) -> bool:
     return any(kw.lower() in text_lower for kw in keywords)
 
 
+def _matches_excluded_keywords(text: str, exclude_keywords: list[str]) -> bool:
+    """Check if text contains any excluded keywords (case-insensitive)."""
+    text_lower = text.lower()
+    return any(kw.lower() in text_lower for kw in exclude_keywords)
+
+
 def fetch_arxiv_papers(
     categories: list[str],
     keywords: list[str],
+    exclude_keywords: list[str] | None = None,
     days: int = 3,
     max_results: int = 200,
 ) -> list[Paper]:
@@ -27,12 +34,14 @@ def fetch_arxiv_papers(
     Args:
         categories: Arxiv categories to search (e.g. ['cs.AI', 'cs.LG'])
         keywords: Keywords to filter by (e.g. ['biodiversity', 'conservation'])
+        exclude_keywords: Keywords that, if present, cause a paper to be excluded
         days: How many days back to look
         max_results: Maximum results to fetch from Arxiv API per category
 
     Returns:
         List of Paper objects matching the criteria
     """
+    exclude_keywords = exclude_keywords or []
     cutoff_date = date.today() - timedelta(days=days)
     papers: dict[str, Paper] = {}  # Deduplicate by arxiv ID
 
@@ -59,6 +68,8 @@ def fetch_arxiv_papers(
         # Double-check keyword match in title or abstract
         combined_text = f"{result.title} {result.summary}"
         if not _matches_keywords(combined_text, keywords):
+            continue
+        if exclude_keywords and _matches_excluded_keywords(combined_text, exclude_keywords):
             continue
 
         arxiv_id = result.entry_id.split("/abs/")[-1]

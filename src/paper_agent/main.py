@@ -112,13 +112,18 @@ async def run(args: argparse.Namespace) -> None:
 
     # --- Fetch papers ---
     all_papers: list[Paper] = []
+    
+    # Shared keywords across both sources
+    shared_keywords = config.get("keywords", [])
+    shared_exclude_keywords = config.get("exclude_keywords", [])
 
     if args.source in ("all", "arxiv"):
         print("Searching Arxiv...")
         arxiv_cfg = config.get("arxiv", {})
         arxiv_papers = fetch_arxiv_papers(
             categories=arxiv_cfg.get("categories", []),
-            keywords=arxiv_cfg.get("keywords", []),
+            keywords=shared_keywords,
+            exclude_keywords=shared_exclude_keywords,
             days=days,
         )
         print(f"  Found {len(arxiv_papers)} matching papers on Arxiv")
@@ -129,7 +134,8 @@ async def run(args: argparse.Namespace) -> None:
         oa_cfg = config.get("openalex", {})
         journal_papers = await fetch_journal_papers(
             journals=config.get("journals", []),
-            keywords=oa_cfg.get("keywords", []),
+            keywords=shared_keywords,
+            exclude_keywords=shared_exclude_keywords,
             days=days,
             mailto=oa_cfg.get("mailto", ""),
         )

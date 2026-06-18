@@ -1,4 +1,32 @@
-markdown_path: /home/benjamin.cretois/AppImages/obsidian_vault/paper_summaries/
+# Keywords and exclusions shared by both Arxiv and OpenAlex
+keywords:
+  - biodiversity
+  - conservation
+  - species distribution
+  - wildlife monitoring
+  - ecological modeling
+  - habitat
+  - remote sensing ecology
+  - animal detection
+  - bioacoustics
+  - camera trap
+  - remote sensing
+  - artificial intelligence
+  - machine learning
+  - deep learning
+  - computer vision
+  - neural network
+  - random forest
+  - species distribution model
+  - automated detection
+  - image classification
+  - object detection
+  - big data
+
+exclude_keywords:
+  - review
+  - survey
+  - tutorial
 
 arxiv:
   categories:
@@ -8,18 +36,6 @@ arxiv:
     - q-bio.PE    # Populations and Evolution
     - q-bio.QM    # Quantitative Methods
     - eess.IV     # Image and Video Processing (remote sensing)
-  keywords:
-    - biodiversity
-    - conservation
-    - species distribution
-    - wildlife monitoring
-    - ecological modeling
-    - habitat
-    - remote sensing ecology
-    - animal detection
-    - bioacoustics
-    - camera trap
-    - remote sensing
 
 journals:
   - name: Methods in Ecology and Evolution
@@ -56,21 +72,6 @@ journals:
     issn: "1470-160X"
 
 openalex:
-  # Keywords to filter journal articles (looking for AI/ML papers in ecology journals)
-  keywords:
-    - artificial intelligence
-    - machine learning
-    - deep learning
-    - computer vision
-    - neural network
-    - random forest
-    - species distribution model
-    - automated detection
-    - image classification
-    - object detection
-    - bioacoustics
-    - biodiversity
-    - big data
   # Polite pool: provide your email for faster rate limits
   mailto: "bencretois@gmail.com"
 
@@ -81,7 +82,7 @@ model:
 
 settings:
   default_days: 3
-  data_dir: "data"
+  data_dir: "/home/benjamin.cretois/AppImages/obsidian_vault/paper_summaries/"
   paper_timeout_seconds: 120  # Skip a paper if the model takes longer than this
   abstract_max_chars: 800     # Max length of abstract to send to model
   min_relevance_score: 0.7    # Drop summaries below this score from output (0.0 = keep all)
