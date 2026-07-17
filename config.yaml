@@ -1,4 +1,4 @@
-# Keywords and exclusions shared by both Arxiv and OpenAlex
+# Keywords and exclusions shared by OpenAlex
 keywords:
   - biodiversity
   - conservation
@@ -27,15 +27,6 @@ exclude_keywords:
   - review
   - survey
   - tutorial
-
-arxiv:
-  categories:
-    - cs.AI
-    - cs.LG
-    - cs.CV
-    - q-bio.PE    # Populations and Evolution
-    - q-bio.QM    # Quantitative Methods
-    - eess.IV     # Image and Video Processing (remote sensing)
 
 journals:
   - name: Methods in Ecology and Evolution
@@ -76,14 +67,14 @@ openalex:
   mailto: "bencretois@gmail.com"
 
 model:
-  base_url: "http://localhost:8087/v1"
-  model_name: "gemma-4-26B-A4B-it-UD-Q4_K_M.gguf"
+  base_url: "http://localhost:8087" #"http://t2lipdocker01.nina.no:11434/v1"
+  model_name: "Qwen3-8B-Q4_K_M.gguf" #"gemma-4-26B-A4B-it-UD-Q4_K_M.gguf"
   api_key: "not-needed"
 
 settings:
   default_days: 3
-  data_dir: "/home/benjamin.cretois/AppImages/obsidian_vault/paper_summaries/"
-  paper_timeout_seconds: 120  # Skip a paper if the model takes longer than this
+  data_dir: "/home/benjamin.cretois/AppImages/my_markdown_vault/paper_summaries/"
+  paper_timeout_seconds: 60  # Skip a paper if the model takes longer than this
   abstract_max_chars: 800     # Max length of abstract to send to model
   min_relevance_score: 0.7    # Drop summaries below this score from output (0.0 = keep all)
 
@@ -103,7 +94,7 @@ agents:
       You must produce:
       - summary: 2-3 sentences on the key contribution
       - relevance_score: 0.0-1.0 for relevance to AI + biodiversity/conservation
-      - key_methods: AI/ML techniques used (e.g. CNN, transformer, random forest)
+      - key_novelty: What is novel about their method (e.g. new network, new hardware, new ecological insight)
       - conservation_topics: biodiversity/conservation topics addressed (e.g. species detection, habitat mapping)
 
       Be technical and specific. Avoid vague language.

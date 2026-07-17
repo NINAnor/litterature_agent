@@ -6,23 +6,23 @@ from pydantic import BaseModel, Field
 
 
 class Paper(BaseModel):
-    """A paper fetched from Arxiv or a journal via OpenAlex."""
+    """A paper fetched from a journal via OpenAlex."""
 
-    paper_id: str = Field(description="Unique identifier (arxiv ID or DOI)")
+    paper_id: str = Field(description="Unique identifier (DOI or OpenAlex ID)")
     title: str
     authors: list[str]
     abstract: str
-    url: str = Field(description="Link to the paper (DOI URL or arxiv abs link)")
-    source: str = Field(description="Where the paper was found: 'arxiv' or journal name")
+    url: str = Field(description="Link to the paper (DOI URL)")
+    source: str = Field(description="Where the paper was found: journal name")
     published_date: date
-    categories: list[str] = Field(default_factory=list, description="Arxiv categories or journal subject areas")
+    categories: list[str] = Field(default_factory=list, description="Journal subject areas")
     fetched_at: datetime = Field(default_factory=datetime.now)
 
 
 class PaperSummary(BaseModel):
     """LLM-generated summary for a single paper."""
 
-    paper_id: str
+    paper_id: str = ""
     title: str
     summary: str = Field(description="2-3 sentence summary of the paper's contribution")
     relevance_score: float = Field(

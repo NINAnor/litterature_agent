@@ -2,13 +2,13 @@
 
 An AI-powered agent designed to automatically track and summarize the latest scientific literature at the intersection of **Artificial Intelligence** and **Biodiversity Conservation**.
 
-Built with [Pydantic AI](https://ai.pydantic.dev/), this agent performs targeted searches on **Arxiv** and **Open Access journals** (via OpenAlex) to deliver structured, high-quality research summaries.
+Built with [Pydantic AI](https://ai.pydantic.dev/), this agent performs targeted searches on **Open Access journals** (via OpenAlex) to deliver structured, high-quality research summaries.
 
 ## 🔄 Workflow
 
 The agent follows a robust pipeline to ensure high-quality, low-noise research reports:
 
-1.  **Discovery**: The agent queries Arxiv (via categories/keywords) and Open Access journals (via OpenAlex API) for recent publications.
+1.  **Discovery**: The agent queries Open Access journals (via OpenAlex API) for recent publications.
 2.  **Deduplication**: It compares discovered papers against the local `papers.parquet` database to ensure only new, unseen research is processed.
 3.  **Summarization**: For every new paper, an AI agent analyzes the abstract to produce a structured summary and assigns a relevance score.
 4.  **Curation**: Papers with relevance scores below your configured threshold are filtered out to maintain a high signal-to-noise ratio.
@@ -18,9 +18,7 @@ The agent follows a robust pipeline to ensure high-quality, low-noise research r
 ## ✨ Features
 
 - 🤖 **Local-First AI**: Optimized to run against local LLMs (like Gemma 4 via llama.cpp) using OpenAI-compatible APIs.
-- 🔍 **Dual-Source Search**:
-  - **Arxiv**: Deep search in AI/ML categories (cs.AI, cs.LG, etc.) filtered by ecology keywords.
-  - **Open Access Journals**: Monitors high-impact journals (e.g., *Methods in Ecology and Evolution*) using the OpenAlex API.
+- 🔍 **OpenAlex Search**: Monitors high-impact journals (e.g., *Methods in Ecology and Evolution*) using the OpenAlex API.
 - ⚡ **High Performance**: Uses `uv` for lightning-fast environment management and dependency resolution.
 - 📊 **Structured Data**: Stores all discovered papers and summaries in **DuckDB + Parquet** for fast, columnar analysis.
 - ⏱️ **Resilient Execution**: Includes per-paper timeouts to prevent a single slow LLM response from stalling the entire process.
@@ -40,7 +38,7 @@ The agent follows a robust pipeline to ensure high-quality, low-noise research r
     ├── agent.py         # AI agent definitions and skill loading
     ├── models.py         # Data models (Pydantic)
     ├── storage.py       # Local data persistence (DuckDB/Parquet)
-    └── sources/         # Data fetching logic (Arxiv, OpenAlex)
+    └── sources/         # Data fetching logic (OpenAlex)
 ```
 
 ## 🛠️ Installation
@@ -83,9 +81,6 @@ uv run paper-agent
 # Look back further (e.g., last 7 days)
 uv run paper-agent --days 7
 
-# Search only Arxiv
-uv run paper-agent --source arxiv
-
 # Search only Open Access journals
 uv run paper-agent --source journals
 
@@ -107,7 +102,7 @@ uv run paper-agent --list-journals
 
 You can easily adapt this agent to any research area (e.g., **Fish Conservation**, **Climate Modeling**, etc.) by modifying `config.yaml`:
 
-- **Keywords & Categories**: Update `arxiv.keywords` and `openalex.keywords` with domain-specific terms.
+- **Keywords**: Update `keywords` with domain-specific terms.
 - **Journals**: Add relevant journals to the `journals` list with their ISSNs.
 - **Agent Expertise**: If you want the AI to adopt a specific persona or focus on specific nuances of a new field, update the `instructions` in the `agents` block.
 
@@ -116,10 +111,6 @@ You can easily adapt this agent to any research area (e.g., **Fish Conservation*
 All settings are managed in `config.yaml`.
 
 ```yaml
-arxiv:
-  categories: [cs.AI, cs.LG, q-bio.PE]
-  keywords: [biodiversity, conservation, remote sensing]
-
 journals:
   - name: Methods in Ecology and Evolution
     issn: "2041-210X"
@@ -127,7 +118,6 @@ journals:
     issn: "1574-9541"
 
 openalex:
-  keywords: [machine learning, computer vision]
   mailto: "your-email@example.com" # Recommended for OpenAlex polite pool
 
 model:
@@ -165,3 +155,9 @@ uv run pytest
 ```
 
 To add new journals, simply append them to the `journals` list in `config.yaml` using their ISSN.
+
+## Notes  
+
+- **Choose a model with strong function calling**: pydantic-ai uses OpenAI-style **tool/function calling** to extract structured summaries (JSON with specific fields like `relevance_score`, `key_methods`, etc.). The model must respond with a valid `tool_calls` payload, not just plain text. Many models (especially quantized ones) struggle with this format — they may return wrong types (string instead of number for `relevance_score`), omit required fields, or produce malformed JSON. Each failure triggers an automatic retry, which can lead to timeouts and skipped papers. Models from the **Qwen** (3/3.5) and **DeepSeek** families are known for reliable function calling even at low quantization levels. Here we use `Qwen3-8B-Q4_K_M` with `--temp 0.3` for deterministic output.
+
+- **Use a low temperature for structured output**: Function calling is inherently deterministic and the model should pick from a constrained set of fields and types. A high temperature (`--temp 1.0`) makes the model more "creative," which often means it invents field names, returns unexpected types, or ignores the tool schema entirely. For reliable structured output, keep `--temp ≤ 0.3` on the server side. The agent-side `temperature: 0.2` in `config.yaml` only controls pydantic-ai's request — it doesn't override the server flag if you pass `--temp 1.0` at launch.

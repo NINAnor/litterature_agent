@@ -10,7 +10,6 @@ import yaml
 
 from paper_agent.agent import create_paper_agent, create_highlights_agent, build_paper_prompt, build_highlights_prompt, skill_from_config
 from paper_agent.models import Paper, PaperSummary, DailySummary
-from paper_agent.sources.arxiv import fetch_arxiv_papers
 from paper_agent.sources.openalex import fetch_journal_papers
 from paper_agent.storage import PaperStorage
 
@@ -116,18 +115,6 @@ async def run(args: argparse.Namespace) -> None:
     # Shared keywords across both sources
     shared_keywords = config.get("keywords", [])
     shared_exclude_keywords = config.get("exclude_keywords", [])
-
-    if args.source in ("all", "arxiv"):
-        print("Searching Arxiv...")
-        arxiv_cfg = config.get("arxiv", {})
-        arxiv_papers = fetch_arxiv_papers(
-            categories=arxiv_cfg.get("categories", []),
-            keywords=shared_keywords,
-            exclude_keywords=shared_exclude_keywords,
-            days=days,
-        )
-        print(f"  Found {len(arxiv_papers)} matching papers on Arxiv")
-        all_papers.extend(arxiv_papers)
 
     if args.source in ("all", "journals"):
         print("Searching journals via OpenAlex...")
@@ -271,7 +258,7 @@ def main():
     )
     parser.add_argument(
         "--source",
-        choices=["all", "arxiv", "journals"],
+        choices=["all", "journals"],
         default="all",
         help="Which sources to query (default: all)",
     )

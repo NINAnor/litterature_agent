@@ -81,6 +81,7 @@ def create_paper_agent(
     return Agent(
         _make_model(base_url, model_name, api_key),
         output_type=PaperSummary,
+        retries={"tools": 1, "output": 0},
         instructions=skill.instructions,
         model_settings=skill.model_settings,
     )

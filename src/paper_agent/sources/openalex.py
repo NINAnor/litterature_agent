@@ -99,6 +99,9 @@ def _parse_works(works: list[dict], journal_name: str) -> list[Paper]:
     return list(papers.values())
 
 
+_openalex_semaphore = asyncio.Semaphore(4)
+
+
 async def _fetch_one_journal(
     client: httpx.AsyncClient,
     journal: dict,
@@ -117,13 +120,14 @@ async def _fetch_one_journal(
         "sort": "publication_date:desc",
         "select": "id,doi,title,authorships,abstract_inverted_index,publication_date,concepts,primary_location",
     }
-    try:
-        response = await client.get(f"{OPENALEX_BASE_URL}/works", params=params, timeout=30.0)
-        response.raise_for_status()
-        data = response.json()
-    except (httpx.HTTPError, Exception) as e:
-        print(f"  Warning: Failed to fetch from OpenAlex for {journal_name}: {e}")
-        return []
+    async with _openalex_semaphore:
+        try:
+            response = await client.get(f"{OPENALEX_BASE_URL}/works", params=params, timeout=30.0)
+            response.raise_for_status()
+            data = response.json()
+        except (httpx.HTTPError, Exception) as e:
+            print(f"  Warning: Failed to fetch from OpenAlex for {journal_name}: {e}")
+            return []
 
     results = data.get("results", [])
     # Keyword filter
