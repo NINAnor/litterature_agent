@@ -1,0 +1,37 @@
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: src/web_ui/Dockerfile
+    environment:
+        DEBUG: True
+    command: uv run main.py
+    #command: uv run pdb -c continue main.py
+    develop:
+      watch:
+        # Sync the working directory with the `/app` directory in the container
+        - action: sync
+          path: ../..
+          target: /app
+          ignore:
+            - .venv/
+        - action: rebuild
+          path: ../../pyproject.toml
+
+  llama-cpp:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    ports:
+      - "8087:8080"
+    volumes:
+      - llama_models:/root/.cache/llama.cpp
+    environment:
+      LLAMA_ARG_HF_REPO: bartowski/Qwen2.5-14B-Instruct-GGUF:Q5_K_M
+      LLAMA_ARG_N_GPU_LAYERS: "999"
+      LLAMA_ARG_CTX_SIZE: "16384"
+      LLAMA_ARG_HOST: "0.0.0.0"
+      LLAMA_ARG_JINJA: "1"
+    gpus: all
+    restart: unless-stopped
+
+volumes:
+  llama_models:
