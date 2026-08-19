@@ -64,16 +64,16 @@ journals:
 
 openalex:
   # Polite pool: provide your email for faster rate limits
-  mailto: "bencretois@gmail.com"
+  mailto: "taheera.ahmed@nina.no"
 
 model:
-  base_url: "http://localhost:8087" #"http://t2lipdocker01.nina.no:11434/v1"
-  model_name: "Qwen3-8B-Q4_K_M.gguf" #"gemma-4-26B-A4B-it-UD-Q4_K_M.gguf"
+  base_url: "http://localhost:8087/v1"
+  model_name: "bartowski/Qwen2.5-14B-Instruct-GGUF:Q5_K_M"
   api_key: "not-needed"
 
 settings:
   default_days: 3
-  data_dir: "/home/benjamin.cretois/AppImages/my_markdown_vault/paper_summaries/"
+  data_dir: "/home/taheera.ahmed/code/litterature_agent/paper_summaries/"
   paper_timeout_seconds: 60  # Skip a paper if the model takes longer than this
   abstract_max_chars: 800     # Max length of abstract to send to model
   min_relevance_score: 0.7    # Drop summaries below this score from output (0.0 = keep all)
