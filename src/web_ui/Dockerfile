@@ -15,4 +15,4 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 
 ENTRYPOINT ["/app/src/web_ui/entrypoint.sh"]
-CMD ["uv", "run", "main.py"]
+CMD ["uv", "run", "paper-agent-ui"]

@@ -113,7 +113,9 @@ async def _fetch_one_journal(
     """Fetch and keyword-filter papers for a single journal."""
     issn = journal["issn"]
     journal_name = journal["name"]
-    filter_str = f"primary_location.source.issn:{issn},from_publication_date:{from_date}"
+    filter_str = (
+        f"primary_location.source.issn:{issn},from_publication_date:{from_date}"
+    )
     params = {
         **params_base,
         "filter": filter_str,
@@ -122,7 +124,9 @@ async def _fetch_one_journal(
     }
     async with _openalex_semaphore:
         try:
-            response = await client.get(f"{OPENALEX_BASE_URL}/works", params=params, timeout=30.0)
+            response = await client.get(
+                f"{OPENALEX_BASE_URL}/works", params=params, timeout=30.0
+            )
             response.raise_for_status()
             data = response.json()
         except (httpx.HTTPError, Exception) as e:
@@ -132,8 +136,12 @@ async def _fetch_one_journal(
     results = data.get("results", [])
     # Keyword filter
     matching = [
-        w for w in results
-        if _matches_keywords(f"{w.get('title', '')} {_reconstruct_abstract(w.get('abstract_inverted_index'))}", keywords)
+        w
+        for w in results
+        if _matches_keywords(
+            f"{w.get('title', '')} {_reconstruct_abstract(w.get('abstract_inverted_index'))}",
+            keywords,
+        )
         and not _matches_excluded_keywords(
             f"{w.get('title', '')} {_reconstruct_abstract(w.get('abstract_inverted_index'))}",
             exclude_keywords,
@@ -173,7 +181,9 @@ async def fetch_journal_papers(
 
     async with httpx.AsyncClient() as client:
         tasks = [
-            _fetch_one_journal(client, journal, keywords, exclude_keywords, from_date, params_base)
+            _fetch_one_journal(
+                client, journal, keywords, exclude_keywords, from_date, params_base
+            )
             for journal in journals
         ]
         results = await asyncio.gather(*tasks)

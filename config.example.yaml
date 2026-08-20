@@ -1,0 +1,76 @@
+# -----------------------------------------------------------------------------
+# Example configuration for the Paper Agent.
+#
+# Copy this file to `config.yaml` and edit the sections below to track your
+# own research topic. Everything here — keywords, journals, prompts, model —
+# is fully configurable, either by editing this file directly or through the
+# Streamlit UI (`uv run main.py`).
+# -----------------------------------------------------------------------------
+
+# Keywords used to filter papers (a paper must match at least one).
+# Replace these with terms relevant to your own research topic.
+keywords:
+  - your keyword here
+  - another keyword
+
+# Papers matching any of these are dropped, even if they match a keyword above.
+exclude_keywords:
+  - review
+  - survey
+  - tutorial
+
+# Journals to poll via OpenAlex, identified by ISSN. Use the "Journals" search
+# box in the UI to find ISSNs for journals you want to track.
+journals:
+  - name: Example Journal Name
+    issn: "0000-0000"
+
+openalex:
+  # Polite pool: provide your email for faster rate limits
+  mailto: "your.name@nina.no"
+
+model:
+  # Point this at any OpenAI-compatible endpoint (local llama.cpp, OpenWebUI, etc.)
+  base_url: "http://localhost:8087/v1"
+  model_name: "your-model-name"
+  api_key: "not-needed"  # pragma: allowlist secret
+
+settings:
+  default_days: 3
+  data_dir: "./paper_summaries/"
+  paper_timeout_seconds: 60   # Skip a paper if the model takes longer than this
+  abstract_max_chars: 800     # Max length of abstract to send to model
+  min_relevance_score: 0.7    # Drop summaries below this score from output (0.0 = keep all)
+  report_title: "Literature Summary"  # Title shown in the generated markdown report
+
+# Each entry defines the behaviour of one agent used in the pipeline.
+# Add a new skill here to create a new agent without touching any code.
+#
+# Supported keys per skill:
+#   instructions (str)   - System prompt sent to the model. Required.
+#   temperature  (float) - Sampling temperature (0.0–1.0). Optional.
+#   max_tokens   (int)   - Max tokens to generate. Optional.
+agents:
+  paper_summarizer:
+    instructions: |
+      You are a research assistant helping to track literature relevant to the
+      research topic described by the keywords in this configuration.
+      Summarize the given paper concisely and precisely.
+
+      You must produce:
+      - summary: 2-3 sentences on the key contribution
+      - relevance_score: 0.0-1.0 for how relevant this paper is to the research topic
+      - methods: Key methods or techniques used (e.g. specific models, experimental designs, analysis techniques)
+      - topics: Research topics addressed (e.g. specific subfields, application areas)
+
+      Be technical and specific. Avoid vague language.
+    temperature: 0.2   # Low temperature for factual, consistent summaries
+
+  highlighter:
+    instructions: |
+      You are a research assistant. Given a list of paper summaries, identify the most
+      noteworthy papers for this research topic.
+
+      You must produce:
+      - highlights: 1-3 paper titles that are particularly novel or impactful
+    temperature: 0.5   # Slightly higher temperature for more discerning selection

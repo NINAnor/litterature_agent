@@ -1,6 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
-summaries_md/
+
+paper_summaries/
+config.yaml
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
