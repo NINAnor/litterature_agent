@@ -19,6 +19,7 @@ class PaperStorage:
 
         self.papers_path = self.data_dir / "papers.parquet"
         self.summaries_path = self.data_dir / "summaries.parquet"
+        self.highlights_path = self.data_dir / "highlights.parquet"
 
     def get_seen_paper_ids(self) -> set[str]:
         """Return the set of paper IDs already stored."""
@@ -52,21 +53,19 @@ class PaperStorage:
         con = duckdb.connect()
         try:
             if self.papers_path.exists():
-                existing = con.execute(
-                    f"SELECT * FROM '{self.papers_path}'"
-                ).df()
+                existing = con.execute(f"SELECT * FROM '{self.papers_path}'").df()
                 combined = pd.concat([existing, new_df], ignore_index=True)
                 combined = combined.drop_duplicates(subset=["paper_id"], keep="last")
             else:
                 combined = new_df
 
-            con.execute(
-                f"COPY combined TO '{self.papers_path}' (FORMAT PARQUET)"
-            )
+            con.execute(f"COPY combined TO '{self.papers_path}' (FORMAT PARQUET)")
         finally:
             con.close()
 
-    def store_summaries(self, summaries: list[PaperSummary], run_date: datetime) -> None:
+    def store_summaries(
+        self, summaries: list[PaperSummary], run_date: datetime
+    ) -> None:
         """Append new summaries to the summaries parquet file."""
         if not summaries:
             return
@@ -83,16 +82,32 @@ class PaperStorage:
         con = duckdb.connect()
         try:
             if self.summaries_path.exists():
-                existing = con.execute(
-                    f"SELECT * FROM '{self.summaries_path}'"
-                ).df()
+                existing = con.execute(f"SELECT * FROM '{self.summaries_path}'").df()
                 combined = pd.concat([existing, new_df], ignore_index=True)
             else:
-                combined = new_df
+                combined = new_df  # noqa: F841 - referenced by name in the SQL string below
 
-            con.execute(
-                f"COPY combined TO '{self.summaries_path}' (FORMAT PARQUET)"
-            )
+            con.execute(f"COPY combined TO '{self.summaries_path}' (FORMAT PARQUET)")
+        finally:
+            con.close()
+
+    def store_highlights(self, highlights: list[str], run_date: datetime) -> None:
+        """Append this run's highlights to the highlights parquet file."""
+        if not highlights:
+            return
+
+        new_df = pd.DataFrame({"highlight": highlights})
+        new_df["run_date"] = pd.to_datetime(run_date)
+
+        con = duckdb.connect()
+        try:
+            if self.highlights_path.exists():
+                existing = con.execute(f"SELECT * FROM '{self.highlights_path}'").df()
+                combined = pd.concat([existing, new_df], ignore_index=True)
+            else:
+                combined = new_df  # noqa: F841 - referenced by name in the SQL string below
+
+            con.execute(f"COPY combined TO '{self.highlights_path}' (FORMAT PARQUET)")
         finally:
             con.close()
 

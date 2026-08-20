@@ -1,4 +1,4 @@
-"""Pydantic AI agents for summarizing AI + biodiversity conservation papers."""
+"""Pydantic AI agents for summarizing academic papers on a configurable research topic."""
 
 from dataclasses import dataclass, field
 
@@ -60,6 +60,7 @@ def skill_from_config(cfg: dict) -> AgentSkill:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_model(base_url: str, model_name: str, api_key: str) -> OpenAIChatModel:
     return OpenAIChatModel(
         model_name,
@@ -70,6 +71,7 @@ def _make_model(base_url: str, model_name: str, api_key: str) -> OpenAIChatModel
 # ---------------------------------------------------------------------------
 # Agent factories
 # ---------------------------------------------------------------------------
+
 
 def create_paper_agent(
     base_url: str,
@@ -106,6 +108,7 @@ def create_highlights_agent(
 # Prompt builders
 # ---------------------------------------------------------------------------
 
+
 def build_paper_prompt(paper: Paper, max_chars: int) -> str:
     """Build a concise prompt for a single paper."""
     abstract = paper.abstract
@@ -128,15 +131,15 @@ def build_paper_prompt(paper: Paper, max_chars: int) -> str:
 def build_highlights_prompt(summaries: list[PaperSummary]) -> str:
     """Build a prompt for the highlights call from collected summaries."""
     lines = [
-        f"Here are summaries of {len(summaries)} recent papers on AI and biodiversity conservation.",
+        f"Here are summaries of {len(summaries)} recently reviewed papers.",
         "Pick the 1-3 most noteworthy paper titles.",
         "",
     ]
     for s in summaries:
         lines.append(f"- {s.title}")
         lines.append(f"  Summary: {s.summary}")
-        lines.append(f"  Methods: {', '.join(s.key_methods)}")
-        lines.append(f"  Topics: {', '.join(s.conservation_topics)}")
+        lines.append(f"  Methods: {', '.join(s.methods)}")
+        lines.append(f"  Topics: {', '.join(s.topics)}")
         lines.append(f"  Relevance: {s.relevance_score:.2f}")
         lines.append("")
 
