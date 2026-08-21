@@ -15,7 +15,9 @@ class Paper(BaseModel):
     url: str = Field(description="Link to the paper (DOI URL)")
     source: str = Field(description="Where the paper was found: journal name")
     published_date: date
-    categories: list[str] = Field(default_factory=list, description="Journal subject areas")
+    categories: list[str] = Field(
+        default_factory=list, description="Journal subject areas"
+    )
     fetched_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -26,16 +28,15 @@ class PaperSummary(BaseModel):
     title: str
     summary: str = Field(description="2-3 sentence summary of the paper's contribution")
     relevance_score: float = Field(
-        ge=0, le=1,
-        description="How relevant this paper is to AI + biodiversity conservation (0=not relevant, 1=highly relevant)"
+        ge=0,
+        le=1,
+        description="How relevant this paper is to the configured research topic (0=not relevant, 1=highly relevant)",
     )
-    key_methods: list[str] = Field(
-        default_factory=list,
-        description="Key AI/ML methods or techniques used"
+    methods: list[str] = Field(
+        default_factory=list, description="Key methods or techniques used in the paper"
     )
-    conservation_topics: list[str] = Field(
-        default_factory=list,
-        description="Conservation/biodiversity topics addressed"
+    topics: list[str] = Field(
+        default_factory=list, description="Research topics addressed by the paper"
     )
 
 

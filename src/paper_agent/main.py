@@ -1,4 +1,4 @@
-"""CLI entrypoint for the AI + Biodiversity Conservation paper agent."""
+"""CLI entrypoint for the paper agent — a configurable literature tracker."""
 
 import argparse
 import asyncio
@@ -8,7 +8,13 @@ from pathlib import Path
 
 import yaml
 
-from paper_agent.agent import create_paper_agent, create_highlights_agent, build_paper_prompt, build_highlights_prompt, skill_from_config
+from paper_agent.agent import (
+    create_paper_agent,
+    create_highlights_agent,
+    build_paper_prompt,
+    build_highlights_prompt,
+    skill_from_config,
+)
 from paper_agent.models import Paper, PaperSummary, DailySummary
 from paper_agent.sources.openalex import fetch_journal_papers
 from paper_agent.storage import PaperStorage
@@ -30,6 +36,7 @@ def write_markdown_summary(
     papers: list[Paper],
     output_dir: Path,
     run_date: date,
+    report_title: str = "Literature Summary",
 ) -> Path:
     """Write the summary as a markdown file with Obsidian-friendly formatting."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -44,39 +51,41 @@ def write_markdown_summary(
         "tags: [research, literature_summary, paper_agent]",
         "---",
         "",
-        "# 📄 AI + Biodiversity Conservation Literature Summary",
-        f"**📅 Date:** {run_date.isoformat()}",
-        f"**📊 Papers reviewed:** {len(summary.papers)}",
+        f"# \U0001f4c4 {report_title}",
+        f"**\U0001f4c5 Date:** {run_date.isoformat()}",
+        f"**\U0001f4ca Papers reviewed:** {len(summary.papers)}",
         "",
     ]
 
     if summary.highlights:
-        lines += ["## 🌟 Highlights", ""]
+        lines += ["## \U0001f31f Highlights", ""]
         for highlight in summary.highlights:
             lines.append(f"- {highlight}")
         lines.append("")
 
-    lines += ["## 📖 Paper Summaries", ""]
+    lines += ["## \U0001f4d6 Paper Summaries", ""]
 
     for ps in sorted(summary.papers, key=lambda p: p.relevance_score, reverse=True):
         paper_meta = paper_lookup.get(ps.paper_id)
-        lines.append(f"### 📄 {ps.title}")
+        lines.append(f"### \U0001f4c4 {ps.title}")
         lines.append("")
         if paper_meta:
-            lines.append(f"**🌐 Source:** {paper_meta.source} | **📅 Date:** {paper_meta.published_date}")
+            lines.append(
+                f"**\U0001f310 Source:** {paper_meta.source} | **\U0001f4c5 Date:** {paper_meta.published_date}"
+            )
             authors = ", ".join(paper_meta.authors[:5])
             if len(paper_meta.authors) > 5:
                 authors += " et al."
-            lines.append(f"**✍️ Authors:** {authors}")
-            lines.append(f"**🔗 URL:** {paper_meta.url}")
-        lines.append(f"**🎯 Relevance:** {ps.relevance_score:.2f}")
+            lines.append(f"**\u270d\ufe0f Authors:** {authors}")
+            lines.append(f"**\U0001f517 URL:** {paper_meta.url}")
+        lines.append(f"**\U0001f3af Relevance:** {ps.relevance_score:.2f}")
         lines.append("")
         lines.append(ps.summary)
         lines.append("")
-        if ps.key_methods:
-            lines.append(f"**🛠️ Methods:** {', '.join(ps.key_methods)}")
-        if ps.conservation_topics:
-            lines.append(f"**🌿 Topics:** {', '.join(ps.conservation_topics)}")
+        if ps.methods:
+            lines.append(f"**\U0001f6e0\ufe0f Methods:** {', '.join(ps.methods)}")
+        if ps.topics:
+            lines.append(f"**\U0001f33f Topics:** {', '.join(ps.topics)}")
         lines += ["", "---", ""]
 
     if filepath.exists():
@@ -111,7 +120,7 @@ async def run(args: argparse.Namespace) -> None:
 
     # --- Fetch papers ---
     all_papers: list[Paper] = []
-    
+
     # Shared keywords across both sources
     shared_keywords = config.get("keywords", [])
     shared_exclude_keywords = config.get("exclude_keywords", [])
@@ -136,7 +145,9 @@ async def run(args: argparse.Namespace) -> None:
     # --- Deduplicate against storage ---
     if args.force:
         new_papers = all_papers
-        print(f"\n--force: processing all {len(new_papers)} papers (including previously seen)")
+        print(
+            f"\n--force: processing all {len(new_papers)} papers (including previously seen)"
+        )
     else:
         new_papers = storage.filter_new_papers(all_papers)
         print(f"\n{len(new_papers)} new papers (out of {len(all_papers)} total found)")
@@ -168,7 +179,9 @@ async def run(args: argparse.Namespace) -> None:
     skipped = 0
 
     for i, paper in enumerate(new_papers, 1):
-        title_preview = paper.title[:65] + "..." if len(paper.title) > 65 else paper.title
+        title_preview = (
+            paper.title[:65] + "..." if len(paper.title) > 65 else paper.title
+        )
         print(f"  [{i}/{len(new_papers)}] {title_preview}", end="", flush=True)
         try:
             result = await asyncio.wait_for(
@@ -196,13 +209,19 @@ async def run(args: argparse.Namespace) -> None:
     # --- Filter by relevance threshold ---
     if min_relevance > 0.0:
         before = len(paper_summaries)
-        paper_summaries = [s for s in paper_summaries if s.relevance_score >= min_relevance]
+        paper_summaries = [
+            s for s in paper_summaries if s.relevance_score >= min_relevance
+        ]
         dropped = before - len(paper_summaries)
         if dropped:
-            print(f"\n  {dropped} paper(s) dropped below relevance threshold ({min_relevance:.2f}).")
+            print(
+                f"\n  {dropped} paper(s) dropped below relevance threshold ({min_relevance:.2f})."
+            )
 
     if not paper_summaries:
-        print("No summaries met the relevance threshold. Lower --min-relevance or adjust config.")
+        print(
+            "No summaries met the relevance threshold. Lower --min-relevance or adjust config."
+        )
         return
 
     # --- Highlights call ---
@@ -215,7 +234,7 @@ async def run(args: argparse.Namespace) -> None:
         highlights = highlights_result.output.highlights
         print(" done.")
     except asyncio.TimeoutError:
-        print(f" [timed out, skipping]")
+        print(" [timed out, skipping]")
         highlights = []
     except Exception as e:
         print(f" [failed: {e}]")
@@ -230,9 +249,13 @@ async def run(args: argparse.Namespace) -> None:
     run_date = datetime.now()
     storage.store_papers(new_papers)
     storage.store_summaries(merged_summary.papers, run_date)
+    storage.store_highlights(merged_summary.highlights, run_date)
 
     md_dir = Path(data_dir) / "summaries_md"
-    md_path = write_markdown_summary(merged_summary, new_papers, md_dir, run_date.date())
+    report_title = settings.get("report_title", "Literature Summary")
+    md_path = write_markdown_summary(
+        merged_summary, new_papers, md_dir, run_date.date(), report_title
+    )
 
     print(f"\nDone! Summary written to: {md_path}")
     print(f"Papers summarized: {len(paper_summaries)} / {len(new_papers)}")
@@ -248,7 +271,7 @@ def main():
     """Parse CLI arguments and run."""
     parser = argparse.ArgumentParser(
         prog="paper-agent",
-        description="AI + Biodiversity Conservation literature tracker",
+        description="Configurable literature tracker for academic journals",
     )
     parser.add_argument(
         "--days",

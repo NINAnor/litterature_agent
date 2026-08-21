@@ -1,0 +1,13 @@
+[theme]
+# Background color for the main content area
+backgroundColor = "#FFFFFF"
+# Base theme (light or dark)
+base = "light"
+# Font family
+font = "sans serif"
+# Primary color - used for interactive elements like buttons, sliders
+primaryColor = "#DF9E55"
+# Background color for sidebar and most interactive widgets
+secondaryBackgroundColor = "#E8F4F5"
+# Text color
+textColor = "#262730"
