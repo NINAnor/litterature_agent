@@ -53,5 +53,17 @@ div[data-testid="stMetric"] {
     background-color: rgba(135, 191, 196, 0.15) !important;
     border: 1px solid rgba(135, 191, 196, 0.6) !important;
 }
+
+/* Make the Save button NINA light blue */
+.st-key-save_config_button button {
+    background-color: rgb(232, 244, 245) !important;
+    border: none !important;
+    color: #262730 !important;
+}
+.st-key-save_config_button button:hover {
+    background-color: rgb(210, 232, 234) !important;
+    border: none !important;
+    color: #262730 !important;
+}
 </style>
 """

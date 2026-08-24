@@ -6,7 +6,9 @@ from web_ui.core.constants import LOGO_PATH
 
 
 def render_sidebar(summaries_df) -> str:
-    """Render the sidebar and return the selected run key ("All" or an ISO date)."""
+    """Render the sidebar and return the selected run key (an ISO date), or
+    an empty string if no summaries exist yet.
+    """
     if LOGO_PATH.exists():
         col1, col2, col3 = st.sidebar.columns([1, 2, 1])
         with col2:
@@ -20,24 +22,25 @@ def render_sidebar(summaries_df) -> str:
 
     if summaries_df is None or summaries_df.empty:
         st.sidebar.caption("No summaries generated yet.")
-        return "All"
+        return ""
 
     summaries_df["run_day"] = summaries_df["run_date"].dt.date
     counts = summaries_df.groupby("run_day").size().sort_index(ascending=False)
     run_dates = list(counts.index)
 
-    if "selected_run_key" not in st.session_state:
-        st.session_state["selected_run_key"] = "All"
+    if "selected_run_key" not in st.session_state or st.session_state[
+        "selected_run_key"
+    ] not in [d.isoformat() for d in run_dates]:
+        st.session_state["selected_run_key"] = run_dates[0].isoformat()
 
-    nav_items = [("All", f"All ({len(summaries_df)})", ":material/list:")]
-    for d in run_dates:
-        nav_items.append(
-            (
-                d.isoformat(),
-                f"{d.strftime('%d/%m/%Y')} ({counts[d]})",
-                ":material/description:",
-            )
+    nav_items = [
+        (
+            d.isoformat(),
+            f"{d.strftime('%d/%m/%Y')} ({counts[d]})",
+            ":material/description:",
         )
+        for d in run_dates
+    ]
 
     for key_val, label, icon in nav_items:
         is_active = st.session_state["selected_run_key"] == key_val

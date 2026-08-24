@@ -13,18 +13,13 @@ def render_summaries_panel(
         st.caption(f"Run the agent to populate `{data_dir}/summaries.parquet`.")
         return
 
-    if selected == "All":
-        day_df = summaries_df
-        selected_day = None
-        st.subheader(f":material/description: All summaries ({len(day_df)})")
-    else:
-        selected_day = date.fromisoformat(selected)
-        day_df = summaries_df[summaries_df["run_day"] == selected_day]
-        st.subheader(
-            f":material/description: {selected_day.strftime('%d/%m/%Y')} ({len(day_df)} papers)"
-        )
+    selected_day = date.fromisoformat(selected)
+    day_df = summaries_df[summaries_df["run_day"] == selected_day]
+    st.subheader(
+        f":material/description: {selected_day.strftime('%d/%m/%Y')} ({len(day_df)} papers)"
+    )
 
-    _render_highlights(highlights_df, selected, selected_day)
+    _render_highlights(highlights_df, selected_day)
 
     search = st.text_input(
         "Search title or summary",
@@ -41,16 +36,11 @@ def render_summaries_panel(
         _render_paper_card(row)
 
 
-def _render_highlights(highlights_df, selected: str, selected_day) -> None:
+def _render_highlights(highlights_df, selected_day) -> None:
     if highlights_df is None or highlights_df.empty:
         return
 
-    if selected == "All":
-        day_highlights = highlights_df
-    else:
-        day_highlights = highlights_df[
-            highlights_df["run_date"].dt.date == selected_day
-        ]
+    day_highlights = highlights_df[highlights_df["run_date"].dt.date == selected_day]
 
     if day_highlights.empty:
         return

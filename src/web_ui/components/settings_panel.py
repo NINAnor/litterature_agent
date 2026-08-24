@@ -30,7 +30,11 @@ def render_settings_panel(cfg: dict) -> tuple[int, bool]:
         save_col1, save_col2 = st.columns(2)
         with save_col1:
             if st.button(
-                "Save", type="primary", icon=":material/save:", width="stretch"
+                "Save",
+                type="primary",
+                icon=":material/save:",
+                width="stretch",
+                key="save_config_button",
             ):
                 save_config(cfg)
                 st.success("Saved!")
