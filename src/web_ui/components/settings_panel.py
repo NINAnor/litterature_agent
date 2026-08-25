@@ -2,11 +2,12 @@
 
 import streamlit as st
 
-from web_ui.core.config_io import DQ, load_config, save_config
+from web_ui.components.save_control import render_save_button, render_save_confirmation
+from web_ui.core.config_io import DQ, load_user_config
 from web_ui.core.data import search_openalex_journals
 
 
-def render_settings_panel(cfg: dict) -> tuple[int, bool]:
+def render_settings_panel(cfg: dict, user_id: str) -> tuple[int, bool]:
     """Render the Settings container. Returns (days, show_advanced)."""
     settings_cfg = cfg.get("settings", {})
 
@@ -29,19 +30,13 @@ def render_settings_panel(cfg: dict) -> tuple[int, bool]:
 
         save_col1, save_col2 = st.columns(2)
         with save_col1:
-            if st.button(
-                "Save",
-                type="primary",
-                icon=":material/save:",
-                width="stretch",
-                key="save_config_button",
-            ):
-                save_config(cfg)
-                st.success("Saved!")
+            render_save_button(cfg, user_id, key="save_config_button")
         with save_col2:
             if st.button("Reload", icon=":material/refresh:", width="stretch"):
-                st.session_state.config = load_config()
+                st.session_state.config = load_user_config(user_id)
                 st.rerun()
+
+        render_save_confirmation(key="save_config_button")
 
     return days, show_advanced
 

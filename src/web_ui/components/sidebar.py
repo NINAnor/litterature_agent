@@ -10,8 +10,8 @@ def render_sidebar(summaries_df) -> str:
     an empty string if no summaries exist yet.
     """
     if LOGO_PATH.exists():
-        col1, col2, col3 = st.sidebar.columns([1, 2, 1])
-        with col2:
+        _, logo_col, _ = st.sidebar.columns([1, 2, 1])
+        with logo_col:
             st.image(str(LOGO_PATH), width=150)
 
     st.sidebar.title("Paper Agent")

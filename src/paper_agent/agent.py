@@ -108,6 +108,16 @@ def create_highlights_agent(
 # Prompt builders
 # ---------------------------------------------------------------------------
 
+MAX_AUTHORS_DISPLAYED = 5
+
+
+def format_authors(authors: list[str], limit: int = MAX_AUTHORS_DISPLAYED) -> str:
+    """Join author names, truncating with "et al." past `limit`."""
+    formatted = ", ".join(authors[:limit])
+    if len(authors) > limit:
+        formatted += " et al."
+    return formatted
+
 
 def build_paper_prompt(paper: Paper, max_chars: int) -> str:
     """Build a concise prompt for a single paper."""
@@ -115,13 +125,9 @@ def build_paper_prompt(paper: Paper, max_chars: int) -> str:
     if len(abstract) > max_chars:
         abstract = abstract[:max_chars].rsplit(" ", 1)[0] + "..."
 
-    authors = ", ".join(paper.authors[:5])
-    if len(paper.authors) > 5:
-        authors += " et al."
-
     return (
         f"Title: {paper.title}\n"
-        f"Authors: {authors}\n"
+        f"Authors: {format_authors(paper.authors)}\n"
         f"Source: {paper.source} ({paper.published_date})\n"
         f"Paper ID: {paper.paper_id}\n"
         f"Abstract: {abstract}"

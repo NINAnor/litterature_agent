@@ -13,9 +13,11 @@ from paper_agent.agent import (
     create_highlights_agent,
     build_paper_prompt,
     build_highlights_prompt,
+    format_authors,
     skill_from_config,
 )
 from paper_agent.models import Paper, PaperSummary, DailySummary
+from paper_agent.s3_storage import is_s3_uri, join, write_text
 from paper_agent.sources.openalex import fetch_journal_papers
 from paper_agent.storage import PaperStorage
 
@@ -34,13 +36,24 @@ def load_config(config_path: str = "config.yaml") -> dict:
 def write_markdown_summary(
     summary: DailySummary,
     papers: list[Paper],
-    output_dir: Path,
+    output_dir: str,
     run_date: date,
     report_title: str = "Literature Summary",
-) -> Path:
-    """Write the summary as a markdown file with Obsidian-friendly formatting."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    filepath = output_dir / f"{run_date.isoformat()}.md"
+) -> str:
+    """Write the summary as a markdown file with Obsidian-friendly formatting.
+
+    `output_dir` may be a local directory or an `s3://...` URI.
+    """
+    is_s3 = is_s3_uri(output_dir)
+    if is_s3:
+        filepath = join(output_dir, f"{run_date.isoformat()}.md")
+    else:
+        local_dir = Path(output_dir)
+        local_dir.mkdir(parents=True, exist_ok=True)
+        filepath = local_dir / f"{run_date.isoformat()}.md"
+        if filepath.exists():
+            timestamp = datetime.now().strftime("%H%M%S")
+            filepath = local_dir / f"{run_date.isoformat()}_{timestamp}.md"
 
     paper_lookup = {p.paper_id: p for p in papers}
 
@@ -73,10 +86,9 @@ def write_markdown_summary(
             lines.append(
                 f"**\U0001f310 Source:** {paper_meta.source} | **\U0001f4c5 Date:** {paper_meta.published_date}"
             )
-            authors = ", ".join(paper_meta.authors[:5])
-            if len(paper_meta.authors) > 5:
-                authors += " et al."
-            lines.append(f"**\u270d\ufe0f Authors:** {authors}")
+            lines.append(
+                f"**\u270d\ufe0f Authors:** {format_authors(paper_meta.authors)}"
+            )
             lines.append(f"**\U0001f517 URL:** {paper_meta.url}")
         lines.append(f"**\U0001f3af Relevance:** {ps.relevance_score:.2f}")
         lines.append("")
@@ -88,12 +100,12 @@ def write_markdown_summary(
             lines.append(f"**\U0001f33f Topics:** {', '.join(ps.topics)}")
         lines += ["", "---", ""]
 
-    if filepath.exists():
-        timestamp = datetime.now().strftime("%H%M%S")
-        filepath = output_dir / f"{run_date.isoformat()}_{timestamp}.md"
-
-    filepath.write_text("\n".join(lines))
-    return filepath
+    content = "\n".join(lines)
+    if is_s3:
+        write_text(filepath, content)
+    else:
+        filepath.write_text(content)
+    return str(filepath)
 
 
 async def run(args: argparse.Namespace) -> None:
@@ -251,7 +263,7 @@ async def run(args: argparse.Namespace) -> None:
     storage.store_summaries(merged_summary.papers, run_date)
     storage.store_highlights(merged_summary.highlights, run_date)
 
-    md_dir = Path(data_dir) / "summaries_md"
+    md_dir = join(data_dir, "summaries_md")
     report_title = settings.get("report_title", "Literature Summary")
     md_path = write_markdown_summary(
         merged_summary, new_papers, md_dir, run_date.date(), report_title

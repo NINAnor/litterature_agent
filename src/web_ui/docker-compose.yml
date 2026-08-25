@@ -3,6 +3,8 @@ services:
     build:
       context: ../..
       dockerfile: src/web_ui/Dockerfile
+    env_file:
+      - ../../.env
     environment:
         DEBUG: True
     command: uv run paper-agent-ui

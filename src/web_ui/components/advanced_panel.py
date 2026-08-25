@@ -3,10 +3,11 @@
 import httpx
 import streamlit as st
 
+from web_ui.components.save_control import render_save_button, render_save_confirmation
 from web_ui.core.config_io import DQ, dump_config_str
 
 
-def render_advanced_panel(cfg: dict) -> str:
+def render_advanced_panel(cfg: dict, user_id: str) -> str:
     """Render the Advanced settings container. Returns the selected `source`."""
     with st.container(border=True):
         st.subheader(":material/tune: Advanced settings")
@@ -19,6 +20,9 @@ def render_advanced_panel(cfg: dict) -> str:
 
         with st.expander("Raw YAML", expanded=False, icon=":material/code:"):
             st.code(dump_config_str(cfg), language="yaml")
+
+        render_save_button(cfg, user_id, key="save_advanced_config_button")
+        render_save_confirmation(key="save_advanced_config_button")
 
     return source
 
@@ -85,10 +89,12 @@ def _render_run_settings(cfg: dict) -> None:
             value=int(settings_cfg.get("default_days", 3)),
             key="default_days",
         )
-        settings_cfg["data_dir"] = DQ(
-            st.text_input(
-                "Data directory", value=settings_cfg.get("data_dir", ""), key="data_dir"
-            )
+        settings_cfg["data_dir"] = DQ(settings_cfg.get("data_dir", ""))
+        st.text_input(
+            "Data directory (per-user, managed automatically)",
+            value=settings_cfg["data_dir"],
+            key="data_dir_display",
+            disabled=True,
         )
         settings_cfg["paper_timeout_seconds"] = st.number_input(
             "Paper timeout (seconds)",

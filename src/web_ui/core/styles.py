@@ -55,15 +55,29 @@ div[data-testid="stMetric"] {
 }
 
 /* Make the Save button NINA light blue */
-.st-key-save_config_button button {
+.st-key-save_config_button button,
+.st-key-save_advanced_config_button button {
     background-color: rgb(232, 244, 245) !important;
     border: none !important;
     color: #262730 !important;
 }
-.st-key-save_config_button button:hover {
+.st-key-save_config_button button:hover,
+.st-key-save_advanced_config_button button:hover {
     background-color: rgb(210, 232, 234) !important;
     border: none !important;
     color: #262730 !important;
+}
+
+/* "Saved!" confirmation banners: always span the full width of their
+   container (not just the button's column) so they're clearly visible. */
+.st-key-save_config_button_banner,
+.st-key-save_advanced_config_button_banner {
+    width: 100%;
+}
+.st-key-save_config_button_banner div[data-testid="stAlert"],
+.st-key-save_advanced_config_button_banner div[data-testid="stAlert"] {
+    width: 100%;
+    justify-content: center;
 }
 </style>
 """

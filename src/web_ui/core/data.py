@@ -1,27 +1,24 @@
 """Cached data loaders: parquet summaries/highlights and OpenAlex journal search."""
 
-from pathlib import Path
-
-import duckdb
 import httpx
 import streamlit as st
 
+from paper_agent.s3_storage import connect, join, object_exists
 from web_ui.core.constants import OPENALEX_BASE_URL
 
 
 @st.cache_data(ttl=5)
 def load_summaries(data_dir: str):
     """Join summaries.parquet with papers.parquet (by paper_id) via DuckDB."""
-    data_path = Path(data_dir)
-    summaries_path = data_path / "summaries.parquet"
-    papers_path = data_path / "papers.parquet"
+    summaries_path = join(data_dir, "summaries.parquet")
+    papers_path = join(data_dir, "papers.parquet")
 
-    if not summaries_path.exists():
+    if not object_exists(summaries_path):
         return None
 
-    con = duckdb.connect()
+    con = connect(data_dir)
     try:
-        if papers_path.exists():
+        if object_exists(papers_path):
             df = con.execute(
                 f"""
                 SELECT s.*, p.authors, p.url, p.source, p.published_date
@@ -45,11 +42,11 @@ def load_summaries(data_dir: str):
 @st.cache_data(ttl=5)
 def load_highlights(data_dir: str):
     """Load highlights.parquet, grouped by run day."""
-    highlights_path = Path(data_dir) / "highlights.parquet"
-    if not highlights_path.exists():
+    highlights_path = join(data_dir, "highlights.parquet")
+    if not object_exists(highlights_path):
         return None
 
-    con = duckdb.connect()
+    con = connect(data_dir)
     try:
         return con.execute(
             f"""
