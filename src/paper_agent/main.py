@@ -176,6 +176,10 @@ async def run(args: argparse.Namespace) -> None:
         api_key=model_cfg.get("api_key", "not-needed"),
     )
 
+    print(
+        f"\nConnecting to model API at {model_kwargs['base_url']} "
+        f"(model: {model_kwargs['model_name']})..."
+    )
     paper_agent = create_paper_agent(
         **model_kwargs,
         skill=skill_from_config(agents_cfg.get("paper_summarizer", {})),
@@ -184,8 +188,9 @@ async def run(args: argparse.Namespace) -> None:
         **model_kwargs,
         skill=skill_from_config(agents_cfg.get("highlighter", {})),
     )
+    print("Connected to API.")
 
-    print(f"\nSummarizing {len(new_papers)} papers (timeout: {timeout}s each)...")
+    print(f"\nRunning inference on {len(new_papers)} papers (timeout: {timeout}s each)...")
 
     paper_summaries: list[PaperSummary] = []
     skipped = 0
@@ -194,7 +199,11 @@ async def run(args: argparse.Namespace) -> None:
         title_preview = (
             paper.title[:65] + "..." if len(paper.title) > 65 else paper.title
         )
-        print(f"  [{i}/{len(new_papers)}] {title_preview}", end="", flush=True)
+        print(
+            f"  [{i}/{len(new_papers)}] Running inference: {title_preview}",
+            end="",
+            flush=True,
+        )
         try:
             result = await asyncio.wait_for(
                 paper_agent.run(build_paper_prompt(paper, max_chars)),
@@ -203,7 +212,7 @@ async def run(args: argparse.Namespace) -> None:
             summary = result.output
             summary.paper_id = paper.paper_id
             paper_summaries.append(summary)
-            print(f" (relevance: {summary.relevance_score:.2f})")
+            print(f" -> done (relevance: {summary.relevance_score:.2f})")
         except asyncio.TimeoutError:
             print(f" [timed out after {timeout}s, skipping]")
             skipped += 1
@@ -237,7 +246,7 @@ async def run(args: argparse.Namespace) -> None:
         return
 
     # --- Highlights call ---
-    print("\nGenerating highlights...", end="", flush=True)
+    print("\nRunning inference: generating highlights...", end="", flush=True)
     try:
         highlights_result = await asyncio.wait_for(
             highlights_agent.run(build_highlights_prompt(paper_summaries)),
