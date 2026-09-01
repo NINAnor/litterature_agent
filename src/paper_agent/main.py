@@ -180,17 +180,24 @@ async def run(args: argparse.Namespace) -> None:
         f"\nConnecting to model API at {model_kwargs['base_url']} "
         f"(model: {model_kwargs['model_name']})..."
     )
+    enable_thinking = model_cfg.get("enable_thinking", False)
     paper_agent = create_paper_agent(
         **model_kwargs,
-        skill=skill_from_config(agents_cfg.get("paper_summarizer", {})),
+        skill=skill_from_config(
+            agents_cfg.get("paper_summarizer", {}), enable_thinking=enable_thinking
+        ),
     )
     highlights_agent = create_highlights_agent(
         **model_kwargs,
-        skill=skill_from_config(agents_cfg.get("highlighter", {})),
+        skill=skill_from_config(
+            agents_cfg.get("highlighter", {}), enable_thinking=enable_thinking
+        ),
     )
     print("Connected to API.")
 
-    print(f"\nRunning inference on {len(new_papers)} papers (timeout: {timeout}s each)...")
+    print(
+        f"\nRunning inference on {len(new_papers)} papers (timeout: {timeout}s each)..."
+    )
 
     paper_summaries: list[PaperSummary] = []
     skipped = 0

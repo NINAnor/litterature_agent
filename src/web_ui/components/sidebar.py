@@ -5,19 +5,24 @@ import streamlit as st
 from web_ui.core.constants import LOGO_PATH
 
 
-def render_sidebar(summaries_df) -> str:
-    """Render the sidebar and return the selected run key (an ISO date), or
-    an empty string if no summaries exist yet.
-    """
+def render_sidebar_header() -> None:
+    """Render the logo/title/caption — shown always, even before login."""
     if LOGO_PATH.exists():
         _, logo_col, _ = st.sidebar.columns([1, 2, 1])
         with logo_col:
             st.image(str(LOGO_PATH), width=150)
 
-    st.sidebar.title("Paper Agent")
-    st.sidebar.caption("Track and summarize academic literature on your research topic")
+    st.sidebar.title("Research Assistent")
+    st.sidebar.caption(
+        "Tracks and summarizes academic literature on your research topic"
+    )
 
-    st.sidebar.divider()
+
+def render_sidebar(summaries_df) -> str:
+    """Render the Runs nav menu (shown once logged in) and return the
+    selected run key (an ISO date), or an empty string if no summaries exist
+    yet.
+    """
     st.sidebar.subheader(":material/history: Runs")
 
     if summaries_df is None or summaries_df.empty:

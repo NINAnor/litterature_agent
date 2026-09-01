@@ -60,6 +60,17 @@ def _render_model(cfg: dict) -> None:
                 key="model_api_key",
             )
         )
+        model_cfg["enable_thinking"] = st.checkbox(
+            "Enable thinking mode",
+            value=bool(model_cfg.get("enable_thinking", False)),
+            key="model_enable_thinking",
+            help="For Qwen3-style models with hidden chain-of-thought "
+            "reasoning before the final answer. Leave off (default) for "
+            "faster, cheaper structured-output calls — this pipeline "
+            "doesn't use the reasoning text anyway. Only has an effect on "
+            "servers that support the `chat_template_kwargs.enable_thinking` "
+            "request field (e.g. llama.cpp with Qwen3 + Jinja templates).",
+        )
 
         if st.button(
             "Test connection", key="test_connection", icon=":material/wifi_tethering:"

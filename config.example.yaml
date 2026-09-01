@@ -34,6 +34,14 @@ model:
   base_url: "http://localhost:8087/v1"
   model_name: "your-model-name"
   api_key: "not-needed"  # pragma: allowlist secret
+  # For Qwen3-style models with "thinking mode" (hidden chain-of-thought
+  # before the final answer): disabling this can dramatically cut generation
+  # time/tokens for structured-output tasks like this one. Set to `true` if
+  # you want the model to reason before answering (slower, potentially more
+  # accurate on harder judgments). Only has an effect on models/servers that
+  # support the `chat_template_kwargs.enable_thinking` request field (e.g.
+  # llama.cpp with Qwen3 + Jinja templates).
+  enable_thinking: false
 
 settings:
   default_days: 3

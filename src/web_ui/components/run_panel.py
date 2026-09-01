@@ -1,5 +1,6 @@
 """Right column: the Run button that shells out to `uv run paper-agent`."""
 
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -41,18 +42,15 @@ def render_run_panel(days: int, source: str | None, user_id: str, cfg: dict) -> 
                 "--config",
                 tmp_config_path,
             ]
-            with st.spinner(f"Running: `{' '.join(cmd)}`"):
-                result = subprocess.run(
-                    cmd, cwd=REPO_ROOT, capture_output=True, text=True
-                )
+            stdout, returncode = _stream_subprocess(cmd)
         finally:
             Path(tmp_config_path).unlink(missing_ok=True)
 
         st.session_state["last_run_result"] = {
             "cmd": cmd,
-            "returncode": result.returncode,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
+            "returncode": returncode,
+            "stdout": stdout,
+            "stderr": "",  # merged into stdout, see _stream_subprocess
         }
         load_summaries.clear()
         load_highlights.clear()
@@ -60,6 +58,36 @@ def render_run_panel(days: int, source: str | None, user_id: str, cfg: dict) -> 
         st.rerun()
 
     _render_last_run_result()
+
+
+def _stream_subprocess(cmd: list[str]) -> tuple[str, int]:
+    """Run `cmd`, streaming its combined stdout/stderr into a live log box
+    in the UI as it runs, and return the full output text once it exits.
+    """
+    lines: list[str] = []
+    with st.status(f"Running: `{' '.join(cmd)}`", expanded=True) as status:
+        log_box = st.empty()
+        process = subprocess.Popen(
+            cmd,
+            cwd=REPO_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},
+        )
+        assert process.stdout is not None
+        for line in process.stdout:
+            lines.append(line)
+            log_box.code("".join(lines), language="text")
+        returncode = process.wait()
+
+        if returncode != 0:
+            status.update(label="Run failed", state="error", expanded=True)
+        else:
+            status.update(label="Run complete", state="complete", expanded=False)
+
+    return "".join(lines), returncode
 
 
 def _render_last_run_result() -> None:

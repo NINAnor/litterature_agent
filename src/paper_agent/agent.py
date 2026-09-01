@@ -24,7 +24,7 @@ class AgentSkill:
     model_settings: ModelSettings = field(default_factory=ModelSettings)
 
 
-def skill_from_config(cfg: dict) -> AgentSkill:
+def skill_from_config(cfg: dict, enable_thinking: bool | None = None) -> AgentSkill:
     """
     Build an AgentSkill from a raw config dict (one entry under `agents:`).
 
@@ -32,6 +32,14 @@ def skill_from_config(cfg: dict) -> AgentSkill:
         instructions (str)   - System prompt for the agent. Required.
         temperature  (float) - Sampling temperature override (0.0 – 1.0).
         max_tokens   (int)   - Maximum tokens to generate.
+
+    `enable_thinking`, if not None, is forwarded to the model as
+    `chat_template_kwargs: {"enable_thinking": ...}` via `extra_body` — this
+    toggles Qwen3-style hidden reasoning ("thinking mode"). Disabling it
+    (the default via `model.enable_thinking: false` in config.yaml) skips
+    the model's internal chain-of-thought before answering, which can
+    dramatically cut generation time and token usage for structured-output
+    tasks like this one, at some cost to accuracy on harder judgments.
 
     Example config entry::
 
@@ -49,6 +57,10 @@ def skill_from_config(cfg: dict) -> AgentSkill:
         model_settings_kwargs["temperature"] = temp
     if (max_tok := cfg.get("max_tokens")) is not None:
         model_settings_kwargs["max_tokens"] = max_tok
+    if enable_thinking is not None:
+        model_settings_kwargs["extra_body"] = {
+            "chat_template_kwargs": {"enable_thinking": enable_thinking}
+        }
 
     return AgentSkill(
         instructions=cfg.get("instructions", ""),
