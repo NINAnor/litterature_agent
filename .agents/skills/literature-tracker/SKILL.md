@@ -21,6 +21,25 @@ The bundled script (`scripts/openalex.py`) is stdlib-only Python 3.9+ — no
 installation or dependencies are required. It only fetches data; **you** do all
 the reading, summarizing, scoring, and highlighting.
 
+## Operating rules (read first)
+
+These are hard requirements, not suggestions:
+
+1. **STOP before searching.** You MUST present the inferred keywords, journals,
+   time window, and sort, then **wait for the user to confirm or edit**. Do NOT
+   run any `fetch` command until the user replies. **Only exception:** if the
+   user explicitly says "just go", "don't ask", or similar, proceed immediately.
+2. **Ask for an email once.** In that same confirmation message, ask for an
+   email to use with OpenAlex's polite pool, and pass it as `--mailto <email>`
+   on **every** command for the rest of the session (it prevents rate limits).
+   Only proceed without it if the user declines.
+3. **Use the exact report format** in step 7. Return a Markdown report with the
+   given headings and per-paper blocks — never a free-form prose summary.
+4. **Keep queries tight and batched.** Use the confirmed keywords with
+   `--sort relevance` and a sensible `--max`; make **one** `fetch` call, not many
+   sequential ones.
+5. **Run the script with `python3`** (not `python`).
+
 ## Workflow
 
 ### 1. Interpret the request
@@ -37,10 +56,11 @@ From whatever the user says, infer:
   Otherwise leave empty and search across all open-access literature.
 - **Relevance threshold** (0.0–1.0) below which to drop papers. Default 0.5.
 
-### 2. Propose the criteria and let the user refine them
+### 2. STOP: confirm before searching
 
-Before calling the API, show the user an editable summary and ask them to adjust
-anything. This is the one required confirmation step. For example:
+**You MUST stop here and wait for the user.** Do NOT call the script yet.
+Present the inferred criteria as an editable list and ask the user to adjust
+anything — and ask for a polite-pool email in the same message. For example:
 
 ```
 Here's what I inferred — edit anything before I search:
@@ -51,17 +71,22 @@ Journals:  (none — searching all open-access literature)
            optional, if you'd like to scope: Methods in Ecology and Evolution,
            Remote Sensing in Ecology and Conservation
 Window:    last 14 days   |   Sort: relevance   |   Open access only: yes
+
+What email should I use for OpenAlex (avoids rate limits)? Or say "skip".
+Reply with any edits, or "go" to search.
 ```
 
 Let the user add/remove keywords, accept or reject any suggested journals, or
-change the window/threshold. Only fetch once they're happy.
+change the window/threshold. **Only fetch once they reply.** The single
+exception is if the user has already told you to "just go" / "don't ask" — then
+skip the wait and search with your inferred criteria.
 
 ### 3. (Optional) Resolve journals to ISSNs
 
 Only if the user wants to scope to journals. For each journal name:
 
 ```bash
-python scripts/openalex.py search --query "<journal name>"
+python3 scripts/openalex.py search --query "<journal name>"
 ```
 
 This prints `[{"name": ..., "issn": ..., "works_count": ...}]`. Confirm the
@@ -70,7 +95,7 @@ correct ISSN with the user, then collect the confirmed ISSNs.
 You may also try resolving a topic phrase to OpenAlex topic IDs:
 
 ```bash
-python scripts/openalex.py topics --query "camera trap ecology"
+python3 scripts/openalex.py topics --query "camera trap ecology"
 ```
 
 Topic search is unreliable for arbitrary phrases — if it returns nothing, just
@@ -81,21 +106,23 @@ rely on keywords. Only use a returned `topic_id` to *narrow* results.
 Journal-less by default (searches all open-access literature):
 
 ```bash
-python scripts/openalex.py fetch \
+python3 scripts/openalex.py fetch \
   --keywords "camera trap" bioacoustics "deep learning" \
   --exclude review survey \
   --days 14 \
-  --max 40
+  --max 40 \
+  --mailto you@example.com
 ```
 
 Scope to journals and/or topics when the user asked for it:
 
 ```bash
-python scripts/openalex.py fetch \
+python3 scripts/openalex.py fetch \
   --issn 2041-210X 2056-3485 \
   --topic-id T10199 \
   --keywords "camera trap" bioacoustics \
-  --days 14
+  --days 14 \
+  --mailto you@example.com
 ```
 
 Useful flags (all optional):
@@ -107,7 +134,8 @@ Useful flags (all optional):
   to summarize).
 - `--types article review` to change work types (default: `article`; pass
   `--types` with nothing to allow all types).
-- `--mailto <email>` to use OpenAlex's faster "polite pool".
+- `--mailto <email>` — always pass this (see Operating rules) to use OpenAlex's
+  faster "polite pool" and avoid rate limits.
 
 Output is a JSON array of papers, each with: `paper_id`, `title`, `authors`,
 `abstract`, `url`, `source`, `published_date`, `categories`.
@@ -139,7 +167,7 @@ paper has no abstract, say so and score conservatively.
 
 ### 7. Present the report
 
-Output clean Markdown:
+**Use this exact structure. Do not replace it with prose.**
 
 ```markdown
 # Literature Summary — <date>
@@ -178,3 +206,6 @@ re-run from step 4.
   — but always apply your own judgment when scoring relevance.
 - Keep the corpus manageable: if the criteria are very broad, suggest tightening
   keywords or scoping to journals so summaries stay high quality.
+- If you still hit a rate limit (HTTP 429) even with `--mailto`, wait a few
+  seconds and retry a single batched call; for heavy use, OpenAlex also offers a
+  free API key (https://openalex.org/settings/api).

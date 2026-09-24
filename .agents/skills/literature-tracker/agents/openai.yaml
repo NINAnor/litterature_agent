@@ -1,8 +1,8 @@
 interface:
   display_name: "Literature Tracker"
-  short_description: "Find and summarize recent papers from journals via OpenAlex"
+  short_description: "Track and summarize recent papers on your research topics via OpenAlex"
   brand_color: "#2E7D32"
-  default_prompt: "Track recent papers in my field"
+  default_prompt: "Catch me up on recent papers in my field"
 
 policy:
   allow_implicit_invocation: true
