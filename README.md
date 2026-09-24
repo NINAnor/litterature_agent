@@ -1,296 +1,98 @@
-# Paper Agent 📄🌱
+# Literature Tracker 📄🌱
 
-An AI-powered agent that automatically tracks and summarizes the latest scientific literature for any research topic. Point it at your own keywords, journals, and prompts to track whatever field you're interested in — no code changes required.
+An **Agent Skill** that helps an AI assistant find and summarize recent
+open-access papers on the research topics you care about, using the
+[OpenAlex](https://openalex.org) API.
 
-Built with [Pydantic AI](https://ai.pydantic.dev/), this agent performs targeted searches on **Open Access journals** (via OpenAlex) to deliver structured, high-quality research summaries. It ships with a **Streamlit web UI** for configuring, running, and browsing results, in addition to the CLI.
+There is no server, no database, no model to host, and no dependencies to
+install. The skill is a single [`SKILL.md`](.agents/skills/literature-tracker/SKILL.md)
+plus one small, stdlib-only Python script. Your AI host (OpenCode, Claude, or
+ChatGPT desktop / Codex) reads the instructions, interprets your interests from
+plain language, runs the script to fetch papers from OpenAlex, and does all the
+summarizing, relevance scoring, and highlighting itself.
 
-## 🔄 Workflow
+## How it works
 
-The agent follows a robust pipeline to ensure high-quality, low-noise research reports:
+1. You describe your interests in plain language (e.g. *"deep learning for
+   camera-trap and bioacoustic data — catch me up on the last two weeks"*).
+2. The assistant infers **keywords**, **exclude keywords**, a **time window**,
+   and any **journals** you named, then shows the list for you to refine.
+3. It runs `scripts/openalex.py fetch` to pull recent, open-access,
+   keyword-matched papers — across all of OpenAlex by default, or scoped to
+   specific journals (`scripts/openalex.py search` resolves journal names to
+   ISSNs) or topics (`scripts/openalex.py topics`).
+4. It reads the returned JSON and writes a Markdown report: a 2–3 sentence
+   summary, relevance score, methods, and topics per paper, plus 1–3
+   highlights.
 
-1.  **Discovery**: The agent queries Open Access journals (via OpenAlex API) for recent publications.
-2.  **Deduplication**: It compares discovered papers against the `papers.parquet` database (local disk or S3) to ensure only new, unseen research is processed.
-3.  **Summarization**: For every new paper, an AI agent analyzes the abstract to produce a structured summary and assigns a relevance score.
-4.  **Curation**: Papers with relevance scores below your configured threshold are filtered out to maintain a high signal-to-noise ratio.
-5.  **Synthesis**: A secondary agent reviews the curated summaries to extract high-level research trends and key highlights.
-6.  **Reporting**: The final results are persisted in columnar Parquet format and a human-readable Markdown report is generated.
+The only thing the script does is talk to OpenAlex and reconstruct abstracts —
+all the reasoning happens in your assistant.
 
-## ✨ Features
-
-- 🌍 **Fully Configurable**: Not tied to any one research domain — set your own keywords, journals, and agent prompts in `config.yaml`.
-- 🖥️ **Web UI**: A Streamlit app to configure keywords/journals/model settings, trigger runs, and browse summaries and highlights — no need to touch YAML directly.
-- 👥 **Multi-user**: Each user (identified today by a simple username field, standing in for FEIDE login) gets their own isolated keywords/journals/model config and their own papers/summaries, stored per-user in S3.
-- 🤖 **Local-First AI**: Optimized to run against local LLMs (e.g. via [llama.cpp](https://github.com/ggerganov/llama.cpp) or [OpenWebUI](https://github.com/open-webui/open-webui)) using OpenAI-compatible APIs.
-- 🔍 **OpenAlex Search**: Monitors journals of your choice, with an in-app journal search (by name) to find ISSNs and add them with one click.
-- ⚡ **High Performance**: Uses `uv` for lightning-fast environment management and dependency resolution.
-- 📊 **Structured Data**: Stores all discovered papers, summaries, and run highlights in **DuckDB + Parquet** for fast, columnar analysis — locally or directly on S3.
-- ⏱️ **Resilient Execution**: Includes per-paper timeouts to prevent a single slow LLM response from stalling the entire process.
-- 📝 **Clean Reporting**: Generates beautifully formatted Markdown summaries with trends and research highlights.
-- 🐳 **Docker-ready**: Ships with a `Dockerfile` and `docker-compose.yml` for both the web UI and a local `llama.cpp` GPU inference server.
-
-## 📂 Project Structure
+## Repository layout
 
 ```text
 .
-├── config.example.yaml    # Template — copy to config.yaml for CLI-only, local-disk usage
-├── .env.example           # Template — copy to .env to configure S3 credentials (web UI)
-├── .streamlit/
-│   └── config.toml         # Streamlit theme (colors, branding)
-├── paper_summaries/        # Local storage for papers, summaries, and generated reports
-│   ├── papers.parquet       # Metadata for all discovered papers
-│   ├── summaries.parquet    # LLM-generated summaries and scores
-│   ├── highlights.parquet   # Per-run highlight selections
-│   └── summaries_md/        # Human-readable Markdown reports
-├── src/paper_agent/        # CLI agent source code
-│   ├── main.py               # CLI entrypoint and workflow orchestration
-│   ├── agent.py               # AI agent definitions, prompt building, skill loading
-│   ├── models.py              # Data models (Pydantic)
-│   ├── storage.py             # Paper/summary persistence (DuckDB + Parquet, local or S3)
-│   ├── s3_storage.py          # S3 helpers (DuckDB `httpfs`-only, no extra SDK — see below)
-│   └── sources/                # Data fetching logic (OpenAlex)
-└── src/web_ui/              # Streamlit web UI
-    ├── main.py                 # Launcher (`uv run paper-agent-ui`)
-    ├── core/
-    │   ├── app.py                # Main UI entrypoint — composes the panels below
-    │   ├── config_io.py          # Per-user config.yaml load/save (S3-backed)
-    │   ├── data.py                # Cached parquet loaders + OpenAlex journal search
-    │   ├── constants.py           # Shared paths/constants
-    │   └── styles.py              # Custom CSS (NINA branding)
-    ├── components/
-    │   ├── user_panel.py          # Username input (FEIDE-login placeholder)
-    │   ├── sidebar.py              # Logo + "Runs" history nav
-    │   ├── summaries_panel.py     # Highlights + paper summary cards
-    │   ├── settings_panel.py      # Keywords/journals + Save/Reload
-    │   ├── advanced_panel.py      # OpenAlex/model/run-settings/agents + Save
-    │   ├── save_control.py        # Shared Save button + auto-dismissing "Saved!" banner
-    │   └── run_panel.py           # "Run paper-agent" button + last-run output
-    ├── assets/                # Logo/branding assets
-    ├── Dockerfile
-    └── docker-compose.yml     # Web UI + local llama.cpp GPU server
+├── .agents/skills/literature-tracker/
+│   ├── SKILL.md              # Instructions the host model follows
+│   ├── agents/openai.yaml    # Optional ChatGPT-desktop UI metadata
+│   └── scripts/openalex.py   # Stdlib-only OpenAlex fetch engine (Python 3.9+)
+├── tests/
+│   └── test_openalex.py      # Unit tests (mocked HTTP)
+└── README.md
 ```
 
-## 🛠️ Installation
+## Installation
 
-### Prerequisites
+The skill uses the open [Agent Skills standard](https://agentskills.io), so the
+same folder works across hosts. Copy or symlink
+`.agents/skills/literature-tracker/` into the location your host discovers:
 
-- [Python 3.10+](https://www.python.org/)
-- [uv](https://github.com/astral-sh/uv) (recommended package manager)
-- A local LLM server (e.g., [llama.cpp](https://github.com/ggerganov/llama.cpp) or any OpenAI-compatible endpoint like [OpenWebUI](https://github.com/open-webui/open-webui))
+| Host | Skill location |
+|------|----------------|
+| **OpenCode** | `.opencode/skills/` (project) or `~/.config/opencode/skills/` (global) — it also reads `.agents/skills/` |
+| **ChatGPT desktop / Codex** | `.agents/skills/` (project) or `~/.agents/skills/` (global) |
+| **Claude Code** | `.claude/skills/` (project) or `~/.claude/skills/` (global) |
+| **claude.ai** | Settings → upload the folder as a zip |
 
-### Setup
-
-1.  Clone the repository:
-    ```bash
-    git clone <repository-url>
-    cd paper-agent
-    ```
-
-2.  Install the package and dependencies:
-    ```bash
-    uv sync
-    ```
-
-3.  **For the web UI** (recommended): copy `.env.example` to `.env` and fill in
-    your S3 credentials — see [Multi-user / S3 storage](#-multi-user--s3-storage)
-    below. Each user's config and data live in S3, so there's no `config.yaml`
-    to create by hand.
-
-    **For CLI-only, local-disk usage**: copy the example config instead:
-    ```bash
-    cp config.example.yaml config.yaml
-    ```
-    `config.yaml` is gitignored — it's your personal config (keywords, journals, model endpoint) and won't be committed. See [Configuration](#️-configuration) below.
-
-## 🖥️ Web UI
-
-The easiest way to configure and run the agent is via the Streamlit UI:
+For example, to make it available globally in OpenCode and Codex:
 
 ```bash
-uv run paper-agent-ui
+mkdir -p ~/.agents/skills
+ln -s "$PWD/.agents/skills/literature-tracker" ~/.agents/skills/literature-tracker
 ```
 
-This starts a local server at `http://localhost:8501`. On first load, you'll
-be asked for a **username** in the sidebar — this is a stand-in for FEIDE
-login (for demo purposes only) and is what keeps each user's keywords,
-journals, and paper summaries isolated from everyone else's (see
-[Multi-user / S3 storage](#-multi-user--s3-storage) below). From there you can:
+Then just ask your assistant something like *"track recent deep-learning papers
+in Methods in Ecology and Evolution from the last two weeks."*
 
-- **Browse summaries**: pick a run from the sidebar to see its papers, highlights, methods, and topics
-- **Search journals**: look up journals by name via OpenAlex and add them with one click (no need to know ISSNs)
-- **Edit keywords**: add/remove keywords and exclude-keywords as chips
-- **Save your settings**: the Settings panel (keywords/journals) and the Advanced settings panel (model, OpenAlex, run settings, agent prompts) each have their own **Save** button, with a "Saved!" confirmation that auto-dismisses after a few seconds
-- **Configure the model**: point at any OpenAI-compatible endpoint, with a built-in "Test connection" button (under Advanced settings)
-- **Trigger runs**: run the agent directly from the UI and see its output inline
+## Using the script directly
 
-Alternatively, run it directly with Streamlit:
-```bash
-uv run streamlit run src/web_ui/core/app.py
-```
-
-### Running with Docker
+You don't need to — the assistant runs it for you — but it's a normal CLI:
 
 ```bash
-docker compose -f src/web_ui/docker-compose.yml up
+# Find a journal's ISSN (only needed if you want to scope to journals)
+python3 .agents/skills/literature-tracker/scripts/openalex.py \
+  search --query "Methods in Ecology and Evolution"
+
+# Fetch recent open-access matching papers across all of OpenAlex
+python3 .agents/skills/literature-tracker/scripts/openalex.py \
+  fetch --keywords "camera trap" bioacoustics --exclude review --days 14 --max 40
+
+# ...or scope to specific journals
+python3 .agents/skills/literature-tracker/scripts/openalex.py \
+  fetch --issn 2041-210X --keywords "deep learning" --days 14 --max 40
 ```
 
-This starts both the web UI (port `8501`) and a local GPU-accelerated `llama.cpp` server (port `8087`) that the agent can use as its model backend — see `src/web_ui/docker-compose.yml` to change the model or GPU settings.
+Add `--mailto you@example.com` to use OpenAlex's faster "polite pool".
 
-## ☁️ Multi-user / S3 storage
+## Requirements
 
-When run via the web UI, each user's config (keywords, journals, model
-settings) and generated data (papers/summaries/highlights) are stored in S3
-instead of on local disk, isolated per user under:
+- Python 3.9+ (standard library only — no `pip install` needed)
+- Network access to `api.openalex.org` from wherever the skill runs
 
-```text
-s3://<S3_BUCKET>/<S3_PREFIX>/<username>/config.yaml
-s3://<S3_BUCKET>/<S3_PREFIX>/<username>/paper_summaries/*.parquet
-```
-
-This is implemented with DuckDB's `httpfs` extension (no extra S3 SDK
-required) — see `src/paper_agent/s3_storage.py`. The CLI (`uv run paper-agent`)
-is unaffected and still defaults to local `./paper_summaries/` unless its
-config's `settings.data_dir` is set to an `s3://...` URI.
-
-To enable this, copy `.env.example` to `.env` and fill in your S3 credentials
-(e.g. from the `[miljodata-test]` remote in `~/.config/rclone/rclone.conf`):
+## Development
 
 ```bash
-cp .env.example .env
-# then edit .env: S3_ENDPOINT_URL, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, ...
+python3 -m pytest tests -v
 ```
 
-For local development, if `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` aren't
-set, the app falls back to reading credentials straight out of your local
-`rclone.conf` (remote name configurable via `S3_RCLONE_REMOTE`, default
-`miljodata-test`) — handy so you don't have to duplicate secrets into `.env`.
-
-The username field is a **placeholder for real FEIDE login** — swapping it
-out later only requires changing `render_user_selector()` in
-`src/web_ui/components/user_panel.py` to pull the authenticated user's id
-instead of a free-text input.
-
-## 🚀 CLI Usage
-
-The agent is also a CLI tool. You can run it using `uv run`.
-
-### Basic Run
-
-Summarize papers from the last 3 days (default):
-```bash
-uv run paper-agent
-```
-
-### Customizing the Search
-
-```bash
-# Look back further (e.g., last 7 days)
-uv run paper-agent --days 7
-
-# Search only Open Access journals
-uv run paper-agent --source journals
-
-# Re-process papers even if already seen (useful for testing)
-uv run paper-agent --force
-
-# Only include papers with relevance score >= 0.8
-uv run paper-agent --min-relevance 0.8
-```
-
-### Managing Journals
-
-To see which journals the agent is currently monitoring:
-```bash
-uv run paper-agent --list-journals
-```
-
-## 🌍 Customizing for Different Domains
-
-This agent isn't tied to any single research domain. To adapt it to your own field (e.g. **Fish Conservation**, **Climate Modeling**, **Publication Statistics**, etc.), either use the web UI's Settings panel, or edit `config.yaml` directly (CLI-only usage):
-
-- **Keywords**: Update `keywords` with terms relevant to your topic. Papers must match at least one to be considered.
-- **Exclude keywords**: Terms that, if present, cause a paper to be dropped even if it matched a keyword above (e.g. `review`, `survey`, `tutorial`).
-- **Journals**: Add relevant journals to the `journals` list with their ISSNs — use the web UI's journal search to find these easily, or add them manually.
-- **Agent prompts**: If you want the AI to adopt a specific persona or focus on nuances of your field, update the `instructions` in the `agents` block (under Advanced settings in the UI, or the `agents` section in `config.yaml`). The default prompts are already domain-agnostic (they reference "the research topic described by the keywords in this configuration" rather than any specific field).
-
-See `config.example.yaml` for a ready-to-copy template with placeholder values — this is also what seeds a brand-new user's config in the web UI on first login.
-
-## ⚙️ Configuration
-
-Keywords, journals, model settings, and agent prompts are all controlled by
-the same `config.yaml` shape, whether you're using the CLI (a local
-`config.yaml` file) or the web UI (a per-user `config.yaml` stored in S3 —
-edited through the Settings / Advanced settings panels rather than by hand).
-For CLI-only, local-disk usage, copy `config.example.yaml` to get started —
-see [Installation](#️-installation).
-
-```yaml
-keywords:
-  - your keyword here
-  - another keyword
-
-exclude_keywords:
-  - review
-  - survey
-  - tutorial
-
-journals:
-  - name: Methods in Ecology and Evolution
-    issn: "2041-210X"
-  - name: Ecological Informatics
-    issn: "1574-9541"
-
-openalex:
-  mailto: "your-email@example.com" # Recommended for OpenAlex polite pool
-
-model:
-  base_url: "http://localhost:8087/v1"
-  model_name: "your-model-name"
-  api_key: "not-needed"  # pragma: allowlist secret
-
-settings:
-  default_days: 3
-  data_dir: "./paper_summaries/"
-  paper_timeout_seconds: 60  # Max time to wait per paper summary
-  abstract_max_chars: 800    # Truncate abstracts sent to the model
-  min_relevance_score: 0.7   # Drop papers below this score from the report
-  report_title: "Literature Summary"  # Title shown in the generated markdown report
-
-agents:
-  paper_summarizer:
-    instructions: |
-      You are a research assistant ...  # full system prompt
-    temperature: 0.2    # low for consistent factual summaries
-    # max_tokens: 512   # optional
-
-  highlighter:
-    instructions: |
-      You are a research assistant ...  # highlight selection prompt
-    temperature: 0.5    # slightly higher for discernment
-```
-
-Agent behaviour is fully configured in `config.yaml` under the `agents` block — no code changes needed. To add a new agent skill, add a new key under `agents` and wire it up in `agent.py` using `skill_from_config`.
-
-> **Note:** `settings.data_dir` is shown above for the local-disk/CLI case. In
-> the web UI, this field is managed automatically and always pinned to that
-> user's S3 path — it's shown read-only in Advanced settings rather than
-> editable, so users can't accidentally point their run at someone else's data.
-
-## 🛠️ Development
-
-To run tests:
-```bash
-uv run pytest
-```
-
-To run linting/formatting/dependency checks (same checks as CI):
-```bash
-uvx prek run --all-files
-```
-
-To add new journals, either use the web UI's journal search, or append them to the `journals` list in `config.yaml` using their ISSN.
-
-## Notes
-
-- **Choose a model with strong function calling**: pydantic-ai uses OpenAI-style **tool/function calling** to extract structured summaries (JSON with specific fields like `relevance_score`, `methods`, `topics`). The model must respond with a valid `tool_calls` payload, not just plain text. Many models (especially quantized ones) struggle with this format — they may return wrong types (string instead of number for `relevance_score`), omit required fields, or produce malformed JSON. Each failure triggers an automatic retry, which can lead to timeouts and skipped papers. Models from the **Qwen** and **DeepSeek** families are known for reliable function calling even at low quantization levels.
-
-- **Use a low temperature for structured output**: Function calling is inherently deterministic and the model should pick from a constrained set of fields and types. A high temperature (`--temp 1.0`) makes the model more "creative," which often means it invents field names, returns unexpected types, or ignores the tool schema entirely. For reliable structured output, keep `--temp ≤ 0.3` on the server side. The agent-side `temperature: 0.2` in `config.yaml` only controls pydantic-ai's request — it doesn't override the server flag if you pass `--temp 1.0` at launch.
+The tests stub all HTTP, so they run offline.

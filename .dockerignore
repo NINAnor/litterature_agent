@@ -1,8 +1,0 @@
-_build/
-__pycache__/
-.vscode
-.git
-prek.toml
-prek-extra.toml
-.venv
-.env
