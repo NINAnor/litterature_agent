@@ -39,6 +39,8 @@ These are hard requirements, not suggestions:
    `--sort relevance` and a sensible `--max`; make **one** `fetch` call, not many
    sequential ones.
 5. **Run the script with `python3`** (not `python`).
+6. **Always produce a saved/downloadable Markdown report** (see step 7) — never
+   only print it in chat.
 
 ## Workflow
 
@@ -152,8 +154,10 @@ For every returned paper, produce:
   specific; avoid vague language.
 - **relevance_score** — a float 0.0–1.0 for how relevant the paper is to the
   user's interests (0 = irrelevant, 1 = highly relevant).
-- **methods** — key methods or techniques (specific models, experimental
-  designs, analyses).
+- **key_finding** — one punchy headline sentence: the single most important
+  result, in plain terms.
+- **why_it_matters** — one line tying the paper back to the *user's specific,
+  confirmed* interest (not a generic restatement of the abstract).
 - **topics** — research topics/subfields/application areas addressed.
 
 Base these only on the title and abstract provided. Do not invent findings. If a
@@ -167,31 +171,55 @@ paper has no abstract, say so and score conservatively.
 
 ### 7. Present the report
 
-**Use this exact structure. Do not replace it with prose.**
+**Use this exact structure. Do not replace it with prose.** Use the emoji
+legend below consistently — tastefully, not on every line:
+
+- ⭐ highlight &nbsp; 📅 date &nbsp; 🔗 link &nbsp; 🧭 topics &nbsp;
+  💡 key finding &nbsp; 🎯 why it matters &nbsp; ⚠️ caveat (missing/truncated
+  abstract, etc.)
 
 ```markdown
-# Literature Summary — <date>
+# 📚 Literature Summary — <date>
+
 **Papers reviewed:** <count>  |  **Dropped below threshold:** <n>
 
-## Highlights
-- <title of standout paper 1> — <one-line reason it stands out>
-- <title of standout paper 2> — <one-line reason>
+## ⭐ Highlights
+- **<title of standout paper 1>** — <one-line reason it stands out>
+- **<title of standout paper 2>** — <one-line reason>
 
-## Papers
+## 📄 Papers
+
 ### <title>
-**Source:** <source> | **Date:** <published_date> | **Relevance:** <score>
+📅 <published_date> · 🏛️ <source> · ⭐ Relevance: <score>
 **Authors:** <first few authors, then "et al.">
-**URL:** <url>
+🔗 <url>
 
 <summary>
 
-**Methods:** <comma-separated>
-**Topics:** <comma-separated>
+💡 **Key finding:** <key_finding>
+🎯 **Why it matters:** <why_it_matters>
+🧭 **Topics:** <comma-separated>
+⚠️ <only if abstract was missing/truncated>
+
+---
 ```
 
-Sort papers by relevance (highest first). Flag any paper whose abstract was
-missing or truncated. Offer to save the report to a file and/or export BibTeX
-for the highlights.
+Sort papers by relevance (highest first). Offer to export BibTeX for the
+highlights.
+
+**Saving the report — required, choose based on your own capabilities:**
+
+- **If you have direct filesystem/shell write access** (e.g. running as a
+  coding agent like OpenCode): write the report to
+  `literature-summary-<date>.md` in the current working directory, then tell
+  the user the file path. Do not also paste the full report into chat —
+  a short confirmation (paper count + highlights) is enough.
+- **If you're in a chat interface without persistent disk access** (e.g.
+  ChatGPT desktop/web): use your file-creation capability to produce
+  `literature-summary-<date>.md` as a downloadable attachment, so the user gets
+  a download link/button. Give a short confirmation in chat alongside it.
+- Either way, the user must end up with an actual `.md` file they can keep —
+  not just chat text they'd have to copy manually.
 
 ### 8. Refine
 
