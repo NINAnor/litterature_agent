@@ -1,0 +1,7 @@
+# Exclude the local-discovery symlink from git archive exports (e.g. GitHub's
+# "Download ZIP" button). The real files live in skills/literature-tracker/;
+# this path is just a symlink for hosts that discover skills under
+# .agents/skills/. Archives don't preserve symlinks as regular files, and some
+# consumers (e.g. ChatGPT's plugin uploader) reject symlink archive members
+# outright, so we drop it from exports rather than ship a broken entry.
+.agents/skills/literature-tracker export-ignore

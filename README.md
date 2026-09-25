@@ -81,17 +81,23 @@ in Methods in Ecology and Evolution from the last two weeks."*
 
 ChatGPT's plugin **upload** flow expects an installable package, not a bare
 skill folder — its archive validator looks for a `plugin.json` manifest plus a
-top-level `skills/` directory (this repo already has both at the root). To
-build an uploadable archive:
+top-level `skills/` directory (this repo already has both at the root). Either
+of these works:
 
 ```bash
+# Manual archive (always safe)
 zip -r literature-tracker-plugin.zip plugin.json skills/
+
+# ...or use GitHub's own "Code → Download ZIP" button on the repo.
+# .gitattributes marks the .agents/skills/literature-tracker symlink as
+# export-ignore, so GitHub's archive omits it and only ships plugin.json +
+# skills/ (symlinks aren't valid archive members for ChatGPT's uploader).
 ```
 
-Upload `literature-tracker-plugin.zip` via ChatGPT's plugin install UI. This is
-separate from local skill discovery (the `.agents/skills/` symlink above) —
-use the plugin package specifically when ChatGPT's *upload* flow is what's
-asking for a zip.
+Upload the resulting zip via ChatGPT's plugin install UI. This is separate
+from local skill discovery (the `.agents/skills/` symlink above) — use the
+plugin package specifically when ChatGPT's *upload* flow is what's asking for
+a zip.
 
 ## Using the script directly
 
