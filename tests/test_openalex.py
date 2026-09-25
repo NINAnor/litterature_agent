@@ -15,7 +15,6 @@ import pytest
 
 SCRIPT = (
     Path(__file__).resolve().parent.parent
-    / ".agents"
     / "skills"
     / "literature-tracker"
     / "scripts"

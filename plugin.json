@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "literature-tracker",
+  "version": "1.0.0",
+  "description": "Track and summarize recent open-access papers on your research topics via OpenAlex",
+  "license": "MIT"
+}
